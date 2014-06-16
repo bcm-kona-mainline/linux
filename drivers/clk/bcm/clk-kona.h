@@ -406,6 +406,10 @@ struct kona_clk {
 	struct clk_init_data init_data;	/* includes name of this clock */
 	struct ccu_data *ccu;	/* ccu this clock is associated with */
 	enum bcm_clk_type type;
+	struct {
+		const char *name;
+		struct clk *clk;
+	} prereq;
 	union {
 		void *data;
 		struct peri_clk_data *peri;
@@ -416,16 +420,26 @@ struct kona_clk {
 	container_of(_hw, struct kona_clk, hw)
 
 /* Initialization macro for an entry in a CCU's kona_clks[] array. */
-#define KONA_CLK(_ccu_name, _clk_name, _type)				\
-	{								\
+#define __KONA_CLK_COMMON(_ccu_name, _clk_name, _type)			\
 		.init_data	= {					\
 			.name = #_clk_name,				\
 			.ops = &kona_ ## _type ## _clk_ops,		\
 		},							\
 		.ccu		= &_ccu_name ## _ccu_data,		\
 		.type		= bcm_clk_ ## _type,			\
-		.u.data		= &_clk_name ## _data,			\
+		.u.data		= &_clk_name ## _data
+
+#define KONA_CLK(_ccu_name, _clk_name, _type)				\
+	{								\
+		__KONA_CLK_COMMON(_ccu_name, _clk_name, _type),	\
 	}
+
+#define KONA_CLK_PREREQ(_ccu_name, _clk_name, _type, _prereq)		\
+	{								\
+		.prereq.name	= #_prereq,				\
+		__KONA_CLK_COMMON(_ccu_name, _clk_name, _type),	\
+	}
+
 #define LAST_KONA_CLK	{ .type = bcm_clk_none }
 
 /*

@@ -9,6 +9,7 @@
 #include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/kernel.h>
+#include <linux/clk.h>
 #include <linux/clk-provider.h>
 
 /*
@@ -961,6 +962,63 @@ static int selector_write(struct ccu_data *ccu, struct bcm_clk_gate *gate,
 	return ret;
 }
 
+/*
+ * Common clock prepare/unprepare functions. These implement a "prerequisite"
+ * mechanism; the prerequisite clock is prepared and enabled before the main
+ * clock is prepared.
+ */
+
+static int kona_clk_prepare(struct clk_hw *hw)
+{
+	struct kona_clk *bcm_clk = to_kona_clk(hw);
+	const char *clk_name = bcm_clk->init_data.name;
+	const char *prereq_name = bcm_clk->prereq.name;
+	struct clk *prereq_clk = bcm_clk->prereq.clk;
+	int ret;
+
+	/* If there's no prerequisite clock, there's nothing to do */
+	if (!prereq_name)
+		return 0;
+
+	/* Look up the prerequisite clock if we haven't already */
+	if (!prereq_clk) {
+		prereq_clk = __clk_lookup(prereq_name);
+		if (WARN_ON_ONCE(!prereq_clk))
+			return -ENOENT;
+		bcm_clk->prereq.clk = prereq_clk;
+	}
+
+	ret = clk_prepare(prereq_clk);
+	if (ret) {
+		pr_err("%s: unable to prepare prereq clock %s for %s\n",
+			__func__, prereq_name, clk_name);
+		return ret;
+	}
+
+	ret = clk_enable(prereq_clk);
+	if (ret) {
+		clk_unprepare(prereq_clk);
+		pr_err("%s: unable to enable prereq clock %s for %s\n",
+			__func__, prereq_name, clk_name);
+		return ret;
+	}
+
+	return 0;
+}
+
+static void kona_clk_unprepare(struct clk_hw *hw)
+{
+	struct kona_clk *bcm_clk = to_kona_clk(hw);
+	struct clk *prereq_clk = bcm_clk->prereq.clk;
+
+	/* If there's no prerequisite clock, there's nothing to do */
+	if (!bcm_clk->prereq.name)
+		return;
+
+	clk_disable(prereq_clk);
+	clk_unprepare(prereq_clk);
+}
+
 /* Peripheral clock operations */
 
 static int kona_peri_clk_enable(struct clk_hw *hw)
@@ -1172,6 +1230,8 @@ static int kona_peri_clk_set_rate(struct clk_hw *hw, unsigned long rate,
 }
 
 struct clk_ops kona_peri_clk_ops = {
+	.prepare = kona_clk_prepare,
+	.unprepare = kona_clk_unprepare,
 	.enable = kona_peri_clk_enable,
 	.disable = kona_peri_clk_disable,
 	.is_enabled = kona_peri_clk_is_enabled,
@@ -1260,6 +1320,8 @@ static int kona_bus_clk_is_enabled(struct clk_hw *hw)
 }
 
 struct clk_ops kona_bus_clk_ops = {
+	.prepare = kona_clk_prepare,
+	.unprepare = kona_clk_unprepare,
 	.enable = kona_bus_clk_enable,
 	.disable = kona_bus_clk_disable,
 	.is_enabled = kona_bus_clk_is_enabled,
