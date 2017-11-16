@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include "exynos4412-n710x.dtsi"
+
+&dsi_in_ea8061 {
+	remote-endpoint = <&dsi_out>;
+	status = "okay";
+};
+
+&dsi_out {
+	remote-endpoint = <&dsi_in_ea8061>;
+	status = "okay";
+};
+
+&ea8061 {
+	status = "okay";
+};
