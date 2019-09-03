@@ -3,6 +3,8 @@
  * MIPI-DSI based s6e8aa0 AMOLED LCD 5.3 inch panel driver.
  *
  * Copyright (c) 2013 Samsung Electronics Co., Ltd
+ * Copyright (C) 2019 Paweł Chmiel <pawel.mikolaj.chmiel@gmail.com>
+ * Derived from drivers/gpu/drm/panel/panel-samsung-s6e63m0.c
  *
  * Inki Dae, <inki.dae@samsung.com>
  * Donghwa Lee, <dh09.lee@samsung.com>
@@ -12,6 +14,7 @@
  * Andrzej Hajda <a.hajda@samsung.com>
 */
 
+#include <linux/backlight.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
 #include <linux/module.h>
@@ -25,6 +28,7 @@
 #include <drm/drm_mipi_dsi.h>
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
+#include <drm/drm_print.h>
 
 #define LDI_MTP_LENGTH			24
 #define GAMMA_LEVEL_NUM			25
@@ -84,6 +88,8 @@
 #define AID_2				(0x6)
 #define AID_3				(0x7)
 
+#define MAX_BRIGHTNESS (GAMMA_LEVEL_NUM - 1)
+
 typedef u8 s6e8aa0_gamma_table[GAMMA_TABLE_LEN];
 
 struct s6e8aa0_variant {
@@ -94,6 +100,7 @@ struct s6e8aa0_variant {
 struct s6e8aa0 {
 	struct device *dev;
 	struct drm_panel panel;
+	struct backlight_device *bl_dev;
 
 	struct regulator_bulk_data supplies[2];
 	struct gpio_desc *reset_gpio;
@@ -109,7 +116,6 @@ struct s6e8aa0 {
 	u8 version;
 	u8 id;
 	const struct s6e8aa0_variant *variant;
-	int brightness;
 
 	/* This field is tested by functions directly accessing DSI bus before
 	 * transfer, transfer is skipped if it is set. In case of transfer
@@ -320,9 +326,10 @@ static void s6e8aa0_etc_elvss_control(struct s6e8aa0 *ctx)
 
 static void s6e8aa0_elvss_nvm_set_v142(struct s6e8aa0 *ctx)
 {
+	struct backlight_device *bd = ctx->bl_dev;
 	u8 br;
 
-	switch (ctx->brightness) {
+	switch (bd->props.brightness) {
 	case 0 ... 6: /* 30cd ~ 100cd */
 		br = 0xdf;
 		break;
@@ -761,24 +768,6 @@ static const struct s6e8aa0_variant s6e8aa0_variants[] = {
 	}
 };
 
-static void s6e8aa0_brightness_set(struct s6e8aa0 *ctx)
-{
-	const u8 *gamma;
-
-	if (ctx->error)
-		return;
-
-	gamma = ctx->variant->gamma_tables[ctx->brightness];
-
-	if (ctx->version >= 142)
-		s6e8aa0_elvss_nvm_set(ctx);
-
-	s6e8aa0_dcs_write(ctx, gamma, GAMMA_TABLE_LEN);
-
-	/* update gamma table. */
-	s6e8aa0_dcs_write_seq_static(ctx, 0xf7, 0x03);
-}
-
 static void s6e8aa0_panel_init(struct s6e8aa0 *ctx)
 {
 	s6e8aa0_apply_level_1_key(ctx);
@@ -790,7 +779,7 @@ static void s6e8aa0_panel_init(struct s6e8aa0 *ctx)
 
 	s6e8aa0_panel_cond_set(ctx);
 	s6e8aa0_display_condition_set(ctx);
-	s6e8aa0_brightness_set(ctx);
+	backlight_enable(ctx->bl_dev);
 	s6e8aa0_etc_source_control(ctx);
 	s6e8aa0_etc_pentile_control(ctx);
 	s6e8aa0_elvss_nvm_set(ctx);
@@ -973,6 +962,54 @@ static int s6e8aa0_parse_dt(struct s6e8aa0 *ctx)
 	return 0;
 }
 
+static int s6e8aa0_set_brightness(struct backlight_device *bd)
+{
+	struct s6e8aa0 *ctx = bl_get_data(bd);
+	int brightness = bd->props.brightness;
+	const u8 *gamma;
+
+	if (ctx->error)
+		return ctx->error;
+
+	gamma = ctx->variant->gamma_tables[brightness];
+
+	if (ctx->version >= 142)
+		s6e8aa0_elvss_nvm_set(ctx);
+
+	s6e8aa0_dcs_write(ctx, gamma, GAMMA_TABLE_LEN);
+
+	/* update gamma table. */
+	s6e8aa0_dcs_write_seq_static(ctx, 0xf7, 0x03);
+
+	return s6e8aa0_clear_error(ctx);
+}
+
+static const struct backlight_ops s6e8aa0_backlight_ops = {
+	.update_status	= s6e8aa0_set_brightness,
+};
+
+static int s6e8aa0_backlight_register(struct s6e8aa0 *ctx)
+{
+	struct backlight_properties props = {
+		.type		= BACKLIGHT_RAW,
+		.brightness	= MAX_BRIGHTNESS,
+		.max_brightness = MAX_BRIGHTNESS
+	};
+	struct device *dev = ctx->dev;
+	int ret = 0;
+
+	ctx->bl_dev = devm_backlight_device_register(dev, "panel", dev, ctx,
+						     &s6e8aa0_backlight_ops,
+						     &props);
+	if (IS_ERR(ctx->bl_dev)) {
+		ret = PTR_ERR(ctx->bl_dev);
+		DRM_DEV_ERROR(dev, "error registering backlight device (%d)\n",
+			      ret);
+	}
+
+	return ret;
+}
+
 static int s6e8aa0_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
@@ -1012,7 +1049,9 @@ static int s6e8aa0_probe(struct mipi_dsi_device *dsi)
 		return PTR_ERR(ctx->reset_gpio);
 	}
 
-	ctx->brightness = GAMMA_LEVEL_NUM - 1;
+	ret = s6e8aa0_backlight_register(ctx);
+	if (ret < 0)
+		return ret;
 
 	drm_panel_init(&ctx->panel, dev, &s6e8aa0_drm_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
