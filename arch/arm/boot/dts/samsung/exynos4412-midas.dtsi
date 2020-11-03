@@ -1039,6 +1039,29 @@
 &pmu_system_controller {
 	assigned-clocks = <&pmu_system_controller 0>;
 	assigned-clock-parents = <&clock CLK_XUSBXTI>;
+
+	/* S-Boot 4.0 */
+	#define S5P_INFORM2		0xF008
+	#define S5P_INFORM3		0x080C
+	#define BOOT_MODE_PREFIX	0x12345670
+	#define BOOT_NORMAL		(BOOT_MODE_PREFIX | 0)
+	#define BOOT_DOWNLOAD		(BOOT_MODE_PREFIX | 1)
+	#define BOOT_RECOVERY		(BOOT_MODE_PREFIX | 4)
+
+	no-lpm-mode {
+		compatible = "syscon-reboot";
+		offset = <S5P_INFORM2>;
+		value = <0x12345678>;
+	};
+
+	reboot-mode {
+		compatible = "syscon-reboot-mode";
+		offset = <S5P_INFORM3>;
+		mode-normal = <BOOT_NORMAL>;
+		mode-recovery = <BOOT_RECOVERY>;
+		mode-bootloader = <BOOT_DOWNLOAD>;
+		mode-download = <BOOT_DOWNLOAD>;
+	};
 };
 
 &pinctrl_0 {
