@@ -246,7 +246,7 @@ static int max77693_charger_get_property(struct power_supply *psy,
 
 static const struct power_supply_desc max77693_charger_desc = {
 	.name		= MAX77693_CHARGER_NAME,
-	.type		= POWER_SUPPLY_TYPE_BATTERY,
+	.type		= POWER_SUPPLY_TYPE_MAINS,
 	.properties	= max77693_charger_props,
 	.num_properties	= ARRAY_SIZE(max77693_charger_props),
 	.get_property	= max77693_charger_get_property,
