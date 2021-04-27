@@ -601,8 +601,7 @@ static void nv_program_aspm(struct amdgpu_device *adev)
 	if (amdgpu_aspm != 1)
 		return;
 
-	if ((adev->asic_type >= CHIP_SIENNA_CICHLID) &&
-	    !(adev->flags & AMD_IS_APU) &&
+	if (!(adev->flags & AMD_IS_APU) &&
 	    (adev->nbio.funcs->program_aspm))
 		adev->nbio.funcs->program_aspm(adev);
 
@@ -934,12 +933,7 @@ static int nv_update_umd_stable_pstate(struct amdgpu_device *adev,
 	if (adev->gfx.funcs->update_perfmon_mgcg)
 		adev->gfx.funcs->update_perfmon_mgcg(adev, !enter);
 
-	/*
-	 * The ASPM function is not fully enabled and verified on
-	 * Navi yet. Temporarily skip this until ASPM enabled.
-	 */
-	if ((adev->asic_type >= CHIP_SIENNA_CICHLID) &&
-	    !(adev->flags & AMD_IS_APU) &&
+	if (!(adev->flags & AMD_IS_APU) &&
 	    (adev->nbio.funcs->enable_aspm))
 		adev->nbio.funcs->enable_aspm(adev, !enter);
 
@@ -1071,6 +1065,7 @@ static int nv_common_early_init(void *handle)
 	case CHIP_SIENNA_CICHLID:
 		adev->cg_flags = AMD_CG_SUPPORT_GFX_MGCG |
 			AMD_CG_SUPPORT_GFX_CGCG |
+			AMD_CG_SUPPORT_GFX_CGLS |
 			AMD_CG_SUPPORT_GFX_3D_CGCG |
 			AMD_CG_SUPPORT_MC_MGCG |
 			AMD_CG_SUPPORT_VCN_MGCG |
@@ -1094,6 +1089,7 @@ static int nv_common_early_init(void *handle)
 	case CHIP_NAVY_FLOUNDER:
 		adev->cg_flags = AMD_CG_SUPPORT_GFX_MGCG |
 			AMD_CG_SUPPORT_GFX_CGCG |
+			AMD_CG_SUPPORT_GFX_CGLS |
 			AMD_CG_SUPPORT_GFX_3D_CGCG |
 			AMD_CG_SUPPORT_VCN_MGCG |
 			AMD_CG_SUPPORT_JPEG_MGCG |
@@ -1124,6 +1120,7 @@ static int nv_common_early_init(void *handle)
 			AMD_CG_SUPPORT_MC_LS |
 			AMD_CG_SUPPORT_GFX_FGCG |
 			AMD_CG_SUPPORT_VCN_MGCG |
+			AMD_CG_SUPPORT_SDMA_MGCG |
 			AMD_CG_SUPPORT_JPEG_MGCG;
 		adev->pg_flags = AMD_PG_SUPPORT_GFX_PG |
 			AMD_PG_SUPPORT_VCN |
@@ -1135,6 +1132,7 @@ static int nv_common_early_init(void *handle)
 	case CHIP_DIMGREY_CAVEFISH:
 		adev->cg_flags = AMD_CG_SUPPORT_GFX_MGCG |
 			AMD_CG_SUPPORT_GFX_CGCG |
+			AMD_CG_SUPPORT_GFX_CGLS |
 			AMD_CG_SUPPORT_GFX_3D_CGCG |
 			AMD_CG_SUPPORT_VCN_MGCG |
 			AMD_CG_SUPPORT_JPEG_MGCG |
