@@ -401,6 +401,18 @@ struct peri_clk_data {
 #define CLOCKS(...)	{ __VA_ARGS__, NULL, }
 #define NO_CLOCKS	{ NULL, }	/* Must use of no parent clocks */
 
+struct bus_clk_data {
+	struct bcm_clk_policy policy;
+	struct bcm_clk_gate gate;
+	struct bcm_clk_hyst hyst;
+	struct bcm_clk_trig pre_trig;
+	struct bcm_clk_div pre_div;
+	struct bcm_clk_trig trig;
+	struct bcm_clk_div div;
+	struct bcm_clk_sel sel;
+	const char *clocks[];	/* must be last; use CLOCKS() to declare */
+};
+
 struct kona_clk {
 	struct clk_hw hw;
 	struct clk_init_data init_data;	/* includes name of this clock */
@@ -496,6 +508,7 @@ struct ccu_data {
 /* Exported globals */
 
 extern struct clk_ops kona_peri_clk_ops;
+extern struct clk_ops kona_bus_clk_ops;
 
 /* Externally visible functions */
 
