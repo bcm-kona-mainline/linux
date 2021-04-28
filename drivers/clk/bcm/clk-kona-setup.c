@@ -87,7 +87,7 @@ static bool peri_clk_data_offsets_valid(struct kona_clk *bcm_clk)
 	u32 range;
 	u32 limit;
 
-	/*BUG_ON(bcm_clk->type != bcm_clk_peri); TODO*/
+	BUG_ON(bcm_clk->type != bcm_clk_peri);
 	peri = bcm_clk->u.peri;
 	name = bcm_clk->init_data.name;
 	range = bcm_clk->ccu->range;
@@ -372,7 +372,7 @@ static bool kona_dividers_valid(struct kona_clk *bcm_clk)
 	struct bcm_clk_div *pre_div;
 	u32 limit;
 
-	/*BUG_ON(bcm_clk->type != bcm_clk_peri); TODO*/
+	BUG_ON(bcm_clk->type != bcm_clk_peri);
 
 	if (!divider_exists(&peri->div) || !divider_exists(&peri->pre_div))
 		return true;
@@ -409,101 +409,7 @@ peri_clk_data_valid(struct kona_clk *bcm_clk)
 	struct bcm_clk_trig *trig;
 	const char *name;
 
-	/*BUG_ON(bcm_clk->type != bcm_clk_peri); TODO*/
-
-	/*
-	 * First validate register offsets.  This is the only place
-	 * where we need something from the ccu, so we do these
-	 * together.
-	 */
-	if (!peri_clk_data_offsets_valid(bcm_clk))
-		return false;
-
-	peri = bcm_clk->u.peri;
-	name = bcm_clk->init_data.name;
-
-	policy = &peri->policy;
-	if (policy_exists(policy) && !policy_valid(policy, name))
-		return false;
-
-	gate = &peri->gate;
-	if (gate_exists(gate) && !gate_valid(gate, "gate", name))
-		return false;
-
-	hyst = &peri->hyst;
-	if (hyst_exists(hyst) && !hyst_valid(hyst, name))
-		return false;
-
-	sel = &peri->sel;
-	if (selector_exists(sel)) {
-		if (!sel_valid(sel, "selector", name))
-			return false;
-
-	} else if (sel->parent_count > 1) {
-		pr_err("%s: multiple parents but no selector for %s\n",
-			__func__, name);
-
-		return false;
-	}
-
-	div = &peri->div;
-	pre_div = &peri->pre_div;
-	if (divider_exists(div)) {
-		if (!div_valid(div, "divider", name))
-			return false;
-
-		if (divider_exists(pre_div))
-			if (!div_valid(pre_div, "pre-divider", name))
-				return false;
-	} else if (divider_exists(pre_div)) {
-		pr_err("%s: pre-divider but no divider for %s\n", __func__,
-			name);
-		return false;
-	}
-
-	trig = &peri->trig;
-	if (trigger_exists(trig)) {
-		if (!trig_valid(trig, "trigger", name))
-			return false;
-
-		if (trigger_exists(&peri->pre_trig)) {
-			if (!trig_valid(trig, "pre-trigger", name)) {
-				return false;
-			}
-		}
-		if (!clk_requires_trigger(bcm_clk)) {
-			pr_warn("%s: ignoring trigger for %s (not needed)\n",
-				__func__, name);
-			trigger_clear_exists(trig);
-		}
-	} else if (trigger_exists(&peri->pre_trig)) {
-		pr_err("%s: pre-trigger but no trigger for %s\n", __func__,
-			name);
-		return false;
-	} else if (clk_requires_trigger(bcm_clk)) {
-		pr_err("%s: required trigger missing for %s\n", __func__,
-			name);
-		return false;
-	}
-
-	return kona_dividers_valid(bcm_clk);
-}
-
-/* Determine whether the set of bus clock registers are valid. */
-static bool
-bus_clk_data_valid(struct kona_clk *bcm_clk)
-{
-	struct peri_clk_data *peri;
-	struct bcm_clk_policy *policy;
-	struct bcm_clk_gate *gate;
-	struct bcm_clk_hyst *hyst;
-	struct bcm_clk_sel *sel;
-	struct bcm_clk_div *div;
-	struct bcm_clk_div *pre_div;
-	struct bcm_clk_trig *trig;
-	const char *name;
-
-	/*BUG_ON(bcm_clk->type != bcm_clk_bus); TODO*/
+	BUG_ON(bcm_clk->type != bcm_clk_peri);
 
 	/*
 	 * First validate register offsets.  This is the only place
@@ -588,10 +494,6 @@ static bool kona_clk_valid(struct kona_clk *bcm_clk)
 	switch (bcm_clk->type) {
 	case bcm_clk_peri:
 		if (!peri_clk_data_valid(bcm_clk))
-			return false;
-		break;
-	case bcm_clk_bus:
-		if (!bus_clk_data_valid(bcm_clk))
 			return false;
 		break;
 	default:
@@ -809,11 +711,6 @@ static int kona_clk_setup(struct kona_clk *bcm_clk)
 
 	switch (bcm_clk->type) {
 	case bcm_clk_peri:
-		ret = peri_clk_setup(bcm_clk->u.data, init_data);
-		if (ret)
-			return ret;
-		break;
-	case bcm_clk_bus:
 		ret = peri_clk_setup(bcm_clk->u.data, init_data);
 		if (ret)
 			return ret;

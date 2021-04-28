@@ -130,54 +130,6 @@ static struct peri_clk_data sdio4_sleep_data = {
 	.gate		= HW_SW_GATE(0x0360, 18, 2, 3),
 };
 
-static struct peri_clk_data sdio1_ahb_data = {
-	.gate		= HW_SW_GATE(0x0358, 16, 0, 1),
-	.clocks		= CLOCKS("ref_crystal",
-				 "var_52m",
-				 "ref_52m",
-				 "var_96m",
-				 "ref_96m"),
-	.sel		= SELECTOR(0x0a28, 0, 3),
-	.div		= DIVIDER(0x0a28, 4, 14),
-	.trig		= TRIGGER(0x0afc, 9),
-};
-
-static struct peri_clk_data sdio2_ahb_data = {
-	.gate		= HW_SW_GATE(0x035c, 16, 0, 1),
-	.clocks		= CLOCKS("ref_crystal",
-				 "var_52m",
-				 "ref_52m",
-				 "var_96m",
-				 "ref_96m"),
-	.sel		= SELECTOR(0x0a2c, 0, 3),
-	.div		= DIVIDER(0x0a2c, 4, 14),
-	.trig		= TRIGGER(0x0afc, 10),
-};
-
-static struct peri_clk_data sdio3_ahb_data = {
-	.gate		= HW_SW_GATE(0x0364, 16, 0, 1),
-	.clocks		= CLOCKS("ref_crystal",
-				 "var_52m",
-				 "ref_52m",
-				 "var_96m",
-				 "ref_96m"),
-	.sel		= SELECTOR(0x0a34, 0, 3),
-	.div		= DIVIDER(0x0a34, 4, 14),
-	.trig		= TRIGGER(0x0afc, 12),
-};
-
-static struct peri_clk_data sdio4_ahb_data = {
-	.gate		= HW_SW_GATE(0x0360, 16, 0, 1),
-	.clocks		= CLOCKS("ref_crystal",
-				 "var_52m",
-				 "ref_52m",
-				 "var_96m",
-				 "ref_96m"),
-	.sel		= SELECTOR(0x0a30, 0, 3),
-	.div		= DIVIDER(0x0a30, 4, 14),
-	.trig		= TRIGGER(0x0afc, 11),
-};
-
 static struct ccu_data master_ccu_data = {
 	BCM21664_CCU_COMMON(master, MASTER),
 	.policy		= {
@@ -185,20 +137,12 @@ static struct ccu_data master_ccu_data = {
 		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
 	},
 	.kona_clks	= {
-		[BCM21664_MASTER_CCU_SDIO1_AHB] =
-			KONA_CLK(master, sdio1_ahb, peri),
 		[BCM21664_MASTER_CCU_SDIO1] =
 			KONA_CLK(master, sdio1, peri),
-		[BCM21664_MASTER_CCU_SDIO2_AHB] =
-			KONA_CLK(master, sdio2_ahb, peri),
 		[BCM21664_MASTER_CCU_SDIO2] =
 			KONA_CLK(master, sdio2, peri),
-		[BCM21664_MASTER_CCU_SDIO3_AHB] =
-			KONA_CLK(master, sdio3_ahb, peri),
 		[BCM21664_MASTER_CCU_SDIO3] =
 			KONA_CLK(master, sdio3, peri),
-		[BCM21664_MASTER_CCU_SDIO4_AHB] =
-			KONA_CLK(master, sdio4_ahb, peri),
 		[BCM21664_MASTER_CCU_SDIO4] =
 			KONA_CLK(master, sdio4, peri),
 		[BCM21664_MASTER_CCU_SDIO1_SLEEP] =
@@ -296,8 +240,6 @@ static struct ccu_data slave_ccu_data = {
 		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
 	},
 	.kona_clks	= {
-		[BCM21664_SLAVE_CCU_UARTB] =
-			KONA_CLK(slave, uartb, peri),
 		[BCM21664_SLAVE_CCU_UARTB] =
 			KONA_CLK(slave, uartb, peri),
 		[BCM21664_SLAVE_CCU_UARTB2] =
