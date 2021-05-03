@@ -157,7 +157,28 @@
 			reg-shift = <2>;
 			reg-io-width = <4>;
 		};
+		/* TODO: Verify and add SSP, PMU clocks; SSP is SPI, not I2C! */
+		/*
+		ssp0: spi@4000 {
+			compatible = "brcm,kona-spi";
+			reg = <0x00004000 0x70>;
+			interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_HIGH>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			clocks = <&slave_ccu BCM21664_SLAVE_CCU_SSP0>;
+			status = "disabled";
+		};
 
+		ssp1: spi@5000 {
+			compatible = "brcm,kona-spi";
+			reg = <0x00005000 0x70>;
+			interrupts = <GIC_SPI 105 IRQ_TYPE_LEVEL_HIGH>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			clocks = <&slave_ccu BCM21664_SLAVE_CCU_SSP1>;
+			status = "disabled";
+		};
+		*/
 		bsc1: i2c@16000 {
 			compatible = "brcm,kona-i2c";
 			reg = <0x00016000 0x70>;
@@ -187,7 +208,6 @@
 			clocks = <&slave_ccu BCM21664_SLAVE_CCU_BSC3>;
 			status = "disabled";
 		};
-
 		bsc4: i2c@1c000 {
 			compatible = "brcm,kona-i2c";
 			reg = <0x0001c000 0x70>;
@@ -197,6 +217,17 @@
 			clocks = <&slave_ccu BCM21664_SLAVE_CCU_BSC4>;
 			status = "disabled";
 		};
+		/*
+		pmu: i2c@1a000 {
+			compatible = "brcm,kona-i2c";
+			reg = <0x0001a000 0x70>;
+			interrupts = <GIC_SPI 169 IRQ_TYPE_LEVEL_HIGH>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			clocks = <&slave_ccu BCM21664_SLAVE_CCU_PMU>;
+			status = "disabled";
+		};
+		*/
 	};
 
 	/* Apps bus */
@@ -209,7 +240,7 @@
 		usbotg: usb@e20000 {
 			compatible = "snps,dwc2";
 			reg = <0x00e20000 0x10000>;
-			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
+			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>; /*79?*/
 			clocks = <&usb_otg_ahb_clk>;
 			clock-names = "otg";
 			phys = <&usbphy>;
@@ -255,7 +286,23 @@
 			clocks = <&master_ccu BCM21664_MASTER_CCU_SDIO4>;
 			status = "disabled";
 		};
-
+		/*
+		dma: dma@d03000 {
+			compatible = "arm,pl330", "arm,primecell";
+			reg = <0x00d03000 0x1000>;
+			#dma-cells = <1>;
+			#dma-channels = <8>;
+			interrupts = <GIC_SPI 184 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 185 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 186 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 187 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>;
+			status = "disabled";
+		};
+		*/
 		cdc: cdc@1b0e000 {
 			compatible = "brcm,bcm23550-cdc";
 			reg = <0x01b0e000 0x78>;
