@@ -496,6 +496,10 @@ static bool kona_clk_valid(struct kona_clk *bcm_clk)
 		if (!peri_clk_data_valid(bcm_clk))
 			return false;
 		break;
+	case bcm_clk_bus:
+		//if (!bus_clk_data_valid(bcm_clk))
+		//	return false;
+		break;
 	default:
 		pr_err("%s: unrecognized clock type (%d)\n", __func__,
 			(int)bcm_clk->type);
@@ -678,6 +682,15 @@ peri_clk_setup(struct peri_clk_data *data, struct clk_init_data *init_data)
 	return clk_sel_setup(data->clocks, &data->sel, init_data);
 }
 
+static int
+bus_clk_setup(struct bus_clk_data *data, struct clk_init_data *init_data)
+{
+	init_data->flags = CLK_IGNORE_UNUSED;
+
+	//return clk_sel_setup(data->clocks, &data->sel, init_data);
+	return true;
+}
+
 static void bcm_clk_teardown(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
@@ -712,6 +725,11 @@ static int kona_clk_setup(struct kona_clk *bcm_clk)
 	switch (bcm_clk->type) {
 	case bcm_clk_peri:
 		ret = peri_clk_setup(bcm_clk->u.data, init_data);
+		if (ret)
+			return ret;
+		break;
+	case bcm_clk_bus:
+		ret = bus_clk_setup(bcm_clk->u.data, init_data);
 		if (ret)
 			return ret;
 		break;

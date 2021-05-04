@@ -43,6 +43,7 @@
 #define FSA9480_REG_MANSW1              0x13
 #define FSA9480_REG_MANSW2              0x14
 #define FSA9480_REG_END                 0x15
+#define FSA9480_REG_MANUAL_OVERRIDES1   0x1B
 
 /* Control */
 #define CON_SWITCH_OPEN         (1 << 4)
@@ -355,6 +356,18 @@ static const struct dev_pm_ops fsa9480_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(fsa9480_suspend, fsa9480_resume)
 };
 
+/*
+ *TODO: Figure out how to implement this correctly.
+ * As far as I'm aware, the FSA9485 and FSA9480 use the same IDs where
+ * applicable, so the only way for us to enforce different behavior is
+ * through this variable.
+ */
+
+enum fsa_device_type {
+	FSA_DEVICE_TYPE_FSA9480,
+	FSA_DEVICE_TYPE_FSA9485,
+};
+
 static const struct i2c_device_id fsa9480_id[] = {
 	{ "fsa9480", 0 },
 	{}
@@ -362,9 +375,10 @@ static const struct i2c_device_id fsa9480_id[] = {
 MODULE_DEVICE_TABLE(i2c, fsa9480_id);
 
 static const struct of_device_id fsa9480_of_match[] = {
-	{ .compatible = "fcs,fsa9480", },
-	{ .compatible = "fcs,fsa880", },
-	{ .compatible = "ti,tsu6111", },
+	{ .compatible = "fcs,fsa9480", .data = (void *)FSA_DEVICE_TYPE_FSA9480 },
+	{ .compatible = "fcs,fsa9485", .data = (void *)FSA_DEVICE_TYPE_FSA9485 },
+	{ .compatible = "fcs,fsa880",  .data = (void *)FSA_DEVICE_TYPE_FSA9480 },
+	{ .compatible = "ti,tsu6111",  .data = (void *)FSA_DEVICE_TYPE_FSA9480 },
 	{ },
 };
 MODULE_DEVICE_TABLE(of, fsa9480_of_match);

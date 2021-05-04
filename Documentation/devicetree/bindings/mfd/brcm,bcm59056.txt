@@ -23,6 +23,13 @@ Optional child nodes:
 	gpldo1, gpldo2, gpldo3, gpldo4, gpldo5, gpldo6,
 	vbus
 
+  The valid regulator node names for BCM59054 are:
+  	rfldo, camldo1, camldo2, simldo1, simldo2, sdldo, sdxldo,
+	mmcldo1, mmcldo2, audldo, micldo, usbldo, vibldo,
+	csr, iosr1, iosr2, mmsr, sdsr1, sdsr2, vsr,
+	gpldo1, gpldo2, gpldo3, lvldo1, lvldo2
+
+
 Example:
 	pmu: bcm59056@8 {
 		compatible = "brcm,bcm59056";

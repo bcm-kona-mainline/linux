@@ -119,6 +119,16 @@
 			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&aon_ccu BCM21664_AON_CCU_HUB_TIMER>;
 		};
+
+		pmu_bsc: i2c@100d000 {
+			compatible = "brcm,kona-i2c";
+			reg = <0x0100d000 0xfff>;
+			interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			clocks = <&aon_ccu BCM21664_AON_CCU_PMU>;
+			status = "disabled";
+		};
 	};
 
 	/* Slaves bus */
@@ -208,6 +218,7 @@
 			clocks = <&slave_ccu BCM21664_SLAVE_CCU_BSC3>;
 			status = "disabled";
 		};
+
 		bsc4: i2c@1c000 {
 			compatible = "brcm,kona-i2c";
 			reg = <0x0001c000 0x70>;
@@ -217,17 +228,13 @@
 			clocks = <&slave_ccu BCM21664_SLAVE_CCU_BSC4>;
 			status = "disabled";
 		};
-		/*
-		pmu: i2c@1a000 {
-			compatible = "brcm,kona-i2c";
-			reg = <0x0001a000 0x70>;
-			interrupts = <GIC_SPI 169 IRQ_TYPE_LEVEL_HIGH>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			clocks = <&slave_ccu BCM21664_SLAVE_CCU_PMU>;
+		pwm: pwm@1a000 {
+			compatible = "brcm,bcm23550-pwm", "brcm,kona-pwm";
+			reg = <0x3e01a000 0xcc>;
+			clocks = <&slave_ccu BCM21664_SLAVE_CCU_PWM>;
+			#pwm-cells = <3>;
 			status = "disabled";
 		};
-		*/
 	};
 
 	/* Apps bus */
@@ -240,7 +247,7 @@
 		usbotg: usb@e20000 {
 			compatible = "snps,dwc2";
 			reg = <0x00e20000 0x10000>;
-			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>; /*79?*/
+			interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>; /*47? 79?*/
 			clocks = <&usb_otg_ahb_clk>;
 			clock-names = "otg";
 			phys = <&usbphy>;
@@ -286,7 +293,7 @@
 			clocks = <&master_ccu BCM21664_MASTER_CCU_SDIO4>;
 			status = "disabled";
 		};
-		/*
+
 		dma: dma@d03000 {
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x00d03000 0x1000>;
@@ -302,7 +309,7 @@
 				     <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-		*/
+
 		cdc: cdc@1b0e000 {
 			compatible = "brcm,bcm23550-cdc";
 			reg = <0x01b0e000 0x78>;
@@ -418,6 +425,12 @@
 			clock-frequency = <156000000>;
 		};
 
+		pmu_bsc_var_clk: pmu_bsc_var {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <13000000>;
+		};
+
 		root_ccu: root_ccu@35001000 {
 			compatible = BCM21664_DT_ROOT_CCU_COMPAT;
 			reg = <0x35001000 0x0f00>;
@@ -429,7 +442,9 @@
 			compatible = BCM21664_DT_AON_CCU_COMPAT;
 			reg = <0x35002000 0x0f00>;
 			#clock-cells = <1>;
-			clock-output-names = "hub_timer";
+			clock-output-names = "hub_timer",
+						 "pmu_apb",
+						 "pmu";
 		};
 
 		slave_ccu: slave_ccu@3e011000 {
@@ -442,7 +457,9 @@
 					     "bsc1",
 					     "bsc2",
 					     "bsc3",
-					     "bsc4";
+					     "bsc4",
+						 "pwm_ahb",
+						 "pwm";
 		};
 
 		master_ccu: master_ccu@3f001000 {
@@ -456,7 +473,11 @@
 					     "sdio1_sleep",
 					     "sdio2_sleep",
 					     "sdio3_sleep",
-					     "sdio4_sleep";
+					     "sdio4_sleep",
+						 "sdio1_ahb",
+						 "sdio2_ahb",
+						 "sdio3_ahb",
+						 "sdio4_ahb";
 		};
 	};
 };

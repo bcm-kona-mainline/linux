@@ -80,7 +80,6 @@
 	};
 
 	/* USB switch */
-	/*
 	i2c-gpio {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -97,7 +96,6 @@
 			interrupts = <56 IRQ_TYPE_LEVEL_HIGH>;
 		};
 	};
-	*/
 };
 
 &uartb {
@@ -120,16 +118,6 @@
 	status = "okay";
 };
 
-/*
-&clocks {
-	pmu_bsc_clk {
-		#clock-cells = <0>;
-		compatible = "fixed-clock";
-		clock-frequency = <32768>;
-	};
-};
-*/
-
 &bsc1 {
 	clock-frequency = <400000>;
 	status = "okay";
@@ -147,19 +135,20 @@
 	status = "okay";
 };
 
-/*
-&pmu-i2c {
-	clock-frequency = <3400000>; COMMENT 3.2mhz? Downstream refers to this as a HS bus, but it doesn't give any speed information other than that.
+&pmu_bsc {
+	clock-frequency = <3400000>; /* 3.2mhz? Downstream refers to this as a HS bus, but it doesn't give any speed information other than that. */
 	status = "okay";
 
 	pmu: pmu@8 {
 		reg = <0x08>;
 	};
 };
-*/
+
+&pwm {
+	status = "okay";
+};
 
 /* SD card */
-
 &sdio1 {
 	max-frequency = <48000000>;
 	cd-gpio = <&gpio 91 0>;
@@ -191,19 +180,19 @@
 };
 */
 
-/*
 #include "bcm59054.dtsi"
 
 &pmu {
 	compatible = "brcm,bcm59054";
 	reg = <0x08>;
-	interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_HIGH>;
+	interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>,
+		         <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
 	regulators {
 		rfldo_reg: rfldo {
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
-		}
+		};
 
 		camldo1_reg: camldo1 {
 			regulator-min-microvolt = <1300000>;
@@ -314,31 +303,29 @@
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;			
-		}
+		};
 
 		sdsr1_reg: sdsr1 {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;			
-		}
+		};
 
 		sdsr2_reg: sdsr2 {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;			
-		}
+		};
 
 		iosr1_reg: iosr1 {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;
-		}
+		};
 
 		iosr2_reg: iosr2 {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
-		}
+		};
     };
 };
-
-*/
