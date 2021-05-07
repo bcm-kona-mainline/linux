@@ -19,12 +19,6 @@
 #include <linux/regmap.h>
 #include <linux/slab.h>
 
-enum bcm590xx_device_type {
-	BCM590XX_DEVICE_TYPE_BCM59056,
-	BCM590XX_DEVICE_TYPE_BCM59055,
-	BCM590XX_DEVICE_TYPE_BCM59054,
-};
-
 static const struct mfd_cell bcm590xx_devs[] = {
 	{
 		.name = "bcm590xx-vregs",
@@ -51,11 +45,11 @@ static int bcm590xx_i2c_probe(struct i2c_client *i2c_pri,
 	struct bcm590xx *bcm590xx;
 	int ret;
 
-	printk(id->name);
-
 	bcm590xx = devm_kzalloc(&i2c_pri->dev, sizeof(*bcm590xx), GFP_KERNEL);
 	if (!bcm590xx)
 		return -ENOMEM;
+
+	bcm590xx->device_type = id->name;
 
 	i2c_set_clientdata(i2c_pri, bcm590xx);
 	bcm590xx->dev = &i2c_pri->dev;
@@ -102,9 +96,8 @@ err:
 }
 
 static const struct of_device_id bcm590xx_of_match[] = {
-	{ .compatible = "brcm,bcm59056", .data = (void *)BCM590XX_DEVICE_TYPE_BCM59056 },
-	{ .compatible = "brcm,bcm59055", .data = (void *)BCM590XX_DEVICE_TYPE_BCM59055 },
-	{ .compatible = "brcm,bcm59054", .data = (void *)BCM590XX_DEVICE_TYPE_BCM59054 },
+	{ .compatible = "brcm,bcm59056", },
+	{ .compatible = "brcm,bcm59054", },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, bcm590xx_of_match);
