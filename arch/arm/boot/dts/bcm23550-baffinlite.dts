@@ -142,6 +142,10 @@
 };
 
 &usbotg {
+	vusb_d-supply = <&usbldo_reg>;
+	vusb_a-supply = <&iosr1_reg>;
+	dr_mode = "host";
+	snps,reset-phy-on-wake;
 	status = "okay";
 };
 

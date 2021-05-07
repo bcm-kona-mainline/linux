@@ -228,9 +228,10 @@
 			clocks = <&slave_ccu BCM21664_SLAVE_CCU_BSC4>;
 			status = "disabled";
 		};
+
 		pwm: pwm@1a000 {
 			compatible = "brcm,bcm23550-pwm", "brcm,kona-pwm";
-			reg = <0x3e01a000 0xcc>;
+			reg = <0x1a000 0xcc>;
 			clocks = <&slave_ccu BCM21664_SLAVE_CCU_PWM>;
 			#pwm-cells = <3>;
 			status = "disabled";
@@ -247,12 +248,11 @@
 		usbotg: usb@e20000 {
 			compatible = "snps,dwc2";
 			reg = <0x00e20000 0x10000>;
-			interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>; /*47? 79?*/
+			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>; /*47? 79?*/
 			clocks = <&usb_otg_ahb_clk>;
 			clock-names = "otg";
 			phys = <&usbphy>;
 			phy-names = "usb2-phy";
-			snps,reset-phy-on-wake;
 			status = "disabled";
 		};
 
