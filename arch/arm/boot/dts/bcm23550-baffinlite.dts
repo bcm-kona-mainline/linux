@@ -223,34 +223,34 @@
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
-			regulator-allowed-modes = <0x2 0x4 0x8>; /* NORMAL, IDLE, STANDBY */
-			regulator-initial-mode = <0x8>; /* REGULATOR_MODE_STANDBY */
+			/*regulator-allowed-modes = <0x2 0x4 0x8>; */ /* NORMAL, IDLE, STANDBY */
+			/*regulator-initial-mode = <0x8>; */ /* REGULATOR_MODE_STANDBY */
 		};
 
 		camldo1_reg: camldo1 {
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
-			regulator-initial-mode = <0x8>; /* REGULATOR_MODE_STANDBY */
+			/*regulator-initial-mode = <0x8>;*/ /* REGULATOR_MODE_STANDBY */
 		};
 
 		camldo2_reg: camldo2 {
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
-			regulator-initial-mode = <0x8>; /* REGULATOR_MODE_STANDBY */
+			/*regulator-initial-mode = <0x8>;*/ /* REGULATOR_MODE_STANDBY */
 		};
 
 		simldo1_reg: simldo1 {
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
-			regulator-allowed-modes = <0x2 0x4 0x8>; /* NORMAL, IDLE, STANDBY */
+			/*regulator-allowed-modes = <0x2 0x4 0x8>;*/ /* NORMAL, IDLE, STANDBY */
 		};
 
 		simldo2_reg: simldo2 {
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
-			regulator-allowed-modes = <0x2 0x4 0x8>; /* NORMAL, IDLE, STANDBY */
+			/*regulator-allowed-modes = <0x2 0x4 0x8>;*/ /* NORMAL, IDLE, STANDBY */
 		};
 
 		sdldo_reg: sdldo {
@@ -277,8 +277,8 @@
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
-			regulator-allowed-modes = <0x2 0x4 0x8>; /* NORMAL, IDLE, STANDBY */
-			regulator-initial-mode = <0x8>; /* REGULATOR_MODE_STANDBY */
+			/*regulator-allowed-modes = <0x2 0x4 0x8>;*/ /* NORMAL, IDLE, STANDBY */
+			/*regulator-initial-mode = <0x8>;*/ /* REGULATOR_MODE_STANDBY */
 		};
 
 		usbldo_reg: usbldo {
@@ -337,35 +337,35 @@
 			regulator-min-microvolt = <700000>;
 			regulator-max-microvolt = <1440000>;
 			regulator-always-on;
-			regulator-initial-mode = <0x8>; /* REGULATOR_MODE_STANDBY */
+			/* regulator-initial-mode = <0x8>; */ /* REGULATOR_MODE_STANDBY */
 		};
 
 		mmsr_reg: mmsr {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;			
-			regulator-initial-mode = <0x4>; /* REGULATOR_MODE_IDLE */
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
 		};
 
 		sdsr1_reg: sdsr1 {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;			
-			regulator-initial-mode = <0x4>; /* REGULATOR_MODE_IDLE */
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
 		};
 
 		sdsr2_reg: sdsr2 {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;			
-			regulator-initial-mode = <0x4>; /* REGULATOR_MODE_IDLE */
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
 		};
 
 		iosr1_reg: iosr1 {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;
-			regulator-initial-mode = <0x4>; /* REGULATOR_MODE_IDLE */
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
 		};
 
 		iosr2_reg: iosr2 {
