@@ -55,6 +55,8 @@ static int bcm590xx_i2c_probe(struct i2c_client *i2c_pri,
 	bcm590xx->dev = &i2c_pri->dev;
 	bcm590xx->i2c_pri = i2c_pri;
 
+	dev_info(&i2c_pri->dev, "device type: %s\n", bcm590xx->device_type);
+
 	bcm590xx->regmap_pri = devm_regmap_init_i2c(i2c_pri,
 						 &bcm590xx_regmap_config_pri);
 	if (IS_ERR(bcm590xx->regmap_pri)) {
