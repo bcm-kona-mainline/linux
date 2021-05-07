@@ -477,7 +477,7 @@ CONFIG_ZBOOT_ROM_TEXT=0x0
 CONFIG_ZBOOT_ROM_BSS=0x0
 CONFIG_ARM_APPENDED_DTB=y
 CONFIG_ARM_ATAG_DTB_COMPAT=y
-CONFIG_CMDLINE="console=ttyS1,115200n8 mem=994M ignore_loglevel PMOS_NO_OUTPUT_REDIRECT nosmp root=/dev/ram0"
+CONFIG_CMDLINE="console=ttyS1,115200n8 mem=994M ignore_loglevel PMOS_NO_OUTPUT_REDIRECT nosmp root=/dev/ram0 clk_ignore_unused pd_ignore_unused"
 CONFIG_CMDLINE_FORCE=y
 # CONFIG_KEXEC is not set
 # CONFIG_CRASH_DUMP is not set

@@ -57,6 +57,19 @@
 		reg = <0x80000000 0x3E200000>;
 	};
 
+	/*
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		framebuffer_region@3c200000 {
+			reg = <0x3c200000 0x1000>;
+			no-map;
+		};
+	};
+	*/
+
 	/* Buttons */
 	gpio-keys {
 		compatible = "gpio-keys";
@@ -96,6 +109,24 @@
 			interrupts = <56 IRQ_TYPE_LEVEL_HIGH>;
 		};
 	};
+
+	/* TODO: Framebuffer. This seems to be the correct address, because
+	 *       if you leave it on with the format set to a8b8g8r it fades
+	 *       into black, but with the "correct" setting (as per recovery
+	 *       pixel format in downstream BoardConfig) it stays on the
+	 *       regular Samsung logo screen. Probably would be worth it to
+	 *       dump and analyze the related memory address.
+	 */
+	/*
+	framebuffer@3c200000 {
+		compatible = "simple-framebuffer";
+		reg = <0x3c200000 0x1000>;
+		width = <480>;
+		height = <800>;
+		stride = <(480 * 5)>;
+		format = "b8g8r8a8";
+	};
+	*/
 };
 
 &uartb {
@@ -192,28 +223,34 @@
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
+			regulator-allowed-modes = <0x2 0x4 0x8>; /* NORMAL, IDLE, STANDBY */
+			regulator-initial-mode = <0x8>; /* REGULATOR_MODE_STANDBY */
 		};
 
 		camldo1_reg: camldo1 {
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
+			regulator-initial-mode = <0x8>; /* REGULATOR_MODE_STANDBY */
 		};
 
 		camldo2_reg: camldo2 {
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
+			regulator-initial-mode = <0x8>; /* REGULATOR_MODE_STANDBY */
 		};
 
 		simldo1_reg: simldo1 {
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
+			regulator-allowed-modes = <0x2 0x4 0x8>; /* NORMAL, IDLE, STANDBY */
 		};
 
 		simldo2_reg: simldo2 {
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
+			regulator-allowed-modes = <0x2 0x4 0x8>; /* NORMAL, IDLE, STANDBY */
 		};
 
 		sdldo_reg: sdldo {
@@ -240,6 +277,8 @@
 			regulator-min-microvolt = <1300000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
+			regulator-allowed-modes = <0x2 0x4 0x8>; /* NORMAL, IDLE, STANDBY */
+			regulator-initial-mode = <0x8>; /* REGULATOR_MODE_STANDBY */
 		};
 
 		usbldo_reg: usbldo {
@@ -248,8 +287,9 @@
 		};
 
 		micldo_reg: micldo {
-			regulator-min-microvolt = <1300000>;
-			regulator-max-microvolt = <3300000>;
+			/* This regulator is locked at 1.8v */
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
 		};
 
 		vibldo_reg: vibldo {
@@ -297,30 +337,35 @@
 			regulator-min-microvolt = <700000>;
 			regulator-max-microvolt = <1440000>;
 			regulator-always-on;
+			regulator-initial-mode = <0x8>; /* REGULATOR_MODE_STANDBY */
 		};
 
 		mmsr_reg: mmsr {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;			
+			regulator-initial-mode = <0x4>; /* REGULATOR_MODE_IDLE */
 		};
 
 		sdsr1_reg: sdsr1 {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;			
+			regulator-initial-mode = <0x4>; /* REGULATOR_MODE_IDLE */
 		};
 
 		sdsr2_reg: sdsr2 {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;			
+			regulator-initial-mode = <0x4>; /* REGULATOR_MODE_IDLE */
 		};
 
 		iosr1_reg: iosr1 {
 			regulator-min-microvolt = <860000>;
 			regulator-max-microvolt = <1800000>;
 			regulator-always-on;
+			regulator-initial-mode = <0x4>; /* REGULATOR_MODE_IDLE */
 		};
 
 		iosr2_reg: iosr2 {

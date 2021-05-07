@@ -247,11 +247,12 @@
 		usbotg: usb@e20000 {
 			compatible = "snps,dwc2";
 			reg = <0x00e20000 0x10000>;
-			interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>; /*47? 79?*/
+			interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>; /*47? 79?*/
 			clocks = <&usb_otg_ahb_clk>;
 			clock-names = "otg";
 			phys = <&usbphy>;
 			phy-names = "usb2-phy";
+			snps,reset-phy-on-wake;
 			status = "disabled";
 		};
 
