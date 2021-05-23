@@ -150,6 +150,7 @@
 };
 
 &usbphy {
+	brcm,clear-bit-15;
 	status = "okay";
 };
 

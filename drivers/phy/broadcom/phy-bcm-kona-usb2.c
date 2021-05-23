@@ -14,6 +14,7 @@
 #include <linux/of.h>
 #include <linux/phy/phy.h>
 #include <linux/platform_device.h>
+#include <linux/printk.h>
 
 #define OTGCTL			(0)
 #define OTGCTL_OTGSTAT2		BIT(31)
@@ -23,11 +24,19 @@
 #define OTGCTL_UTMI_LINE_STATE1	BIT(9)
 #define OTGCTL_UTMI_LINE_STATE0	BIT(8)
 
+#define PHYCFG			(4)
+#define PHYCFG_IDDQ_I   (1)
+
 #define P1CTL			(8)
-#define P1CTL_SOFT_RESET	BIT(1)
-#define P1CTL_NON_DRIVING	BIT(0)
+#define P1CTL_USB11_OEB_IS_TXEB	BIT(15)
+#define P1CTL_PHY_MODE			BIT(2)
+#define P1CTL_SOFT_RESET		BIT(1)
+#define P1CTL_NON_DRIVING		BIT(0)
+
+#define PHY_MODE_OTG 2
 
 struct bcm_kona_usb {
+	unsigned int clear_bit_15:1;
 	void __iomem *regs;
 };
 
@@ -52,6 +61,16 @@ static int bcm_kona_usb_phy_init(struct phy *gphy)
 	struct bcm_kona_usb *phy = phy_get_drvdata(gphy);
 	u32 val;
 
+	printk("usb-phy init");
+
+	/* Clear P1CTL bit 15. Needed on some platforms. */
+	if (phy->clear_bit_15) {
+		val = readl(phy->regs + P1CTL);
+		val &= ~P1CTL_USB11_OEB_IS_TXEB;
+		writel(val, phy->regs + P1CTL);
+		mdelay(2);
+	}
+
 	/* Soft reset PHY */
 	val = readl(phy->regs + P1CTL);
 	val &= ~P1CTL_NON_DRIVING;
@@ -62,12 +81,25 @@ static int bcm_kona_usb_phy_init(struct phy *gphy)
 	mdelay(2);
 	writel(val | P1CTL_SOFT_RESET, phy->regs + P1CTL);
 
+	/* Set OTG mode */
+	val |= PHY_MODE_OTG << P1CTL_PHY_MODE;
+	writel(val, phy->regs + P1CTL);
+	mdelay(2);
+
+	/* PLL init..? TODO: figure out what this does */
+	val = readl(phy->regs + PHYCFG);
+	val |= PHYCFG_IDDQ_I;
+	writel(val, phy->regs + PHYCFG);
+	mdelay(2);
+
 	return 0;
 }
 
 static int bcm_kona_usb_phy_power_on(struct phy *gphy)
 {
 	struct bcm_kona_usb *phy = phy_get_drvdata(gphy);
+
+	printk("usb-phy poweron");
 
 	bcm_kona_usb_phy_power(phy, 1);
 
@@ -104,6 +136,9 @@ static int bcm_kona_usb2_probe(struct platform_device *pdev)
 	phy->regs = devm_platform_ioremap_resource(pdev, 0);
 	if (IS_ERR(phy->regs))
 		return PTR_ERR(phy->regs);
+
+	phy->clear_bit_15 = of_property_read_bool(dev->of_node,
+			                           "brcm,clear-bit-15");
 
 	platform_set_drvdata(pdev, phy);
 

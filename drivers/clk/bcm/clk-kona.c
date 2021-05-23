@@ -1224,17 +1224,17 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
 
 	BUG_ON(bcm_clk->type != bcm_clk_peri);
 
-	if (!policy_init(ccu, &peri->policy)) {
-		pr_err("%s: error initializing policy for %s\n",
-			__func__, name);
+	if (!hyst_init(ccu, &peri->hyst)) {
+		pr_err("%s: error initializing hyst for %s\n", __func__, name);
 		return false;
 	}
 	if (!gate_init(ccu, &peri->gate)) {
 		pr_err("%s: error initializing gate for %s\n", __func__, name);
 		return false;
 	}
-	if (!hyst_init(ccu, &peri->hyst)) {
-		pr_err("%s: error initializing hyst for %s\n", __func__, name);
+	if (!policy_init(ccu, &peri->policy)) {
+		pr_err("%s: error initializing policy for %s\n",
+			__func__, name);
 		return false;
 	}
 	if (!div_init(ccu, &peri->gate, &peri->div, &peri->trig)) {
@@ -1277,16 +1277,16 @@ static bool __bus_clk_init(struct kona_clk *bcm_clk)
 	struct ccu_data *ccu = bcm_clk->ccu;
 	struct bus_clk_data *peri = bcm_clk->u.bus;
 	const char *name = bcm_clk->init_data.name;
-	struct bcm_clk_trig *trig;
 
 	BUG_ON(bcm_clk->type != bcm_clk_bus);
 
-	if (!gate_init(ccu, &peri->gate)) {
-		pr_err("%s: error initializing gate for %s\n", __func__, name);
-		return false;
-	}
 	if (!hyst_init(ccu, &peri->hyst)) {
 		pr_err("%s: error initializing hyst for %s\n", __func__, name);
+		return false;
+	}
+
+	if (!gate_init(ccu, &peri->gate)) {
+		pr_err("%s: error initializing gate for %s\n", __func__, name);
 		return false;
 	}
 
