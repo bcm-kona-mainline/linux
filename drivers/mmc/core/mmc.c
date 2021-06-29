@@ -1950,6 +1950,12 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	if (!oldcard)
 		host->card = card;
 
+	err = mmc_start_movi_operation(host->card);
+	if (err) {
+		pr_warn("%s: movi operation failed\n", mmc_hostname(host));
+		goto free_card;
+	}
+
 	return 0;
 
 free_card:
@@ -2353,6 +2359,17 @@ int mmc_attach_mmc(struct mmc_host *host)
 	err = mmc_add_card(host->card);
 	if (err)
 		goto remove_card;
+
+	if (!strncmp(host->card->cid.prod_name, "VTU00M", 6) &&
+			(host->card->cid.prv == 0xf1) &&
+			(mmc_start_movi_smart(host->card) == 0x2))
+		host->card->movi_ops = 0x2;
+
+	err = mmc_start_movi_operation(host->card);
+	if (err) {
+		pr_warn("%s: movi operation failed\n", mmc_hostname(host));
+		goto remove_card;
+	}
 
 	mmc_claim_host(host);
 	return 0;

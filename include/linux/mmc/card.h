@@ -340,6 +340,7 @@ struct mmc_card {
 	unsigned int    nr_parts;
 
 	struct workqueue_struct *complete_wq;	/* Private workqueue */
+	unsigned int movi_ops;
 };
 
 static inline bool mmc_large_sector(struct mmc_card *card)
