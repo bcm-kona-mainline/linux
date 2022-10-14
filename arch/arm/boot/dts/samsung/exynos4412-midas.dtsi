@@ -18,6 +18,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/clock/maxim,max77686.h>
 #include "exynos-pinctrl.h"
+#include <dt-bindings/leds/common.h>
 
 / {
 	compatible = "samsung,midas", "samsung,exynos4412", "samsung,exynos4";
@@ -25,6 +26,7 @@
 	aliases {
 		i2c11 = &i2c_max77693;
 		i2c12 = &i2c_max77693_fuel;
+		i2c13 = &i2c_an30259a;
 		mmc0 = &mshc_0;
 		mmc2 = &sdhci_2;
 		mmc3 = &sdhci_3;
@@ -174,7 +176,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		pmic@66 {
+		max77693_pmic: pmic@66 {
 			compatible = "maxim,max77693";
 			interrupt-parent = <&gpx1>;
 			interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
@@ -283,6 +285,39 @@
 			interrupt-parent = <&gpj0>;
 			interrupts = <3 IRQ_TYPE_EDGE_FALLING>;
 			linux,keycodes = <KEY_BACK KEY_MENU>;
+		};
+	};
+
+	i2c_an30259a: i2c-gpio-5 {
+		compatible = "i2c-gpio";
+		gpios = <&gpf2 7 GPIO_ACTIVE_HIGH>, <&gpf2 6 GPIO_ACTIVE_HIGH>;
+		i2c-gpio,delay-us = <2>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		led-controller@30 {
+			compatible = "panasonic,an30259a";
+			reg = <0x30>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			led@1 {
+				reg = <1>;
+				function = LED_FUNCTION_STATUS;
+				color = <LED_COLOR_ID_RED>;
+			};
+
+			led@2 {
+				reg = <2>;
+				function = LED_FUNCTION_STATUS;
+				color = <LED_COLOR_ID_GREEN>;
+			};
+
+			led@3 {
+				reg = <3>;
+				function = LED_FUNCTION_STATUS;
+				color = <LED_COLOR_ID_BLUE>;
+			};
 		};
 	};
 
