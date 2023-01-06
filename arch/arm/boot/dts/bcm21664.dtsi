@@ -99,6 +99,16 @@
 		clocks = <&aon_ccu BCM21664_AON_CCU_HUB_TIMER>;
 	};
 
+	pmu_i2c@3500d000 {
+		compatible = "brcm,kona-i2c";
+		reg = <0x0100d000 0xfff>;
+		interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&aon_ccu BCM21664_AON_CCU_PMU>;
+		status = "disabled";
+	};
+
 	gpio: gpio@35003000 {
 		compatible = "brcm,bcm21664-gpio", "brcm,kona-gpio";
 		reg = <0x35003000 0x524>;
