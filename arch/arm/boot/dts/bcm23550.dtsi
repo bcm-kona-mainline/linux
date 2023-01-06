@@ -129,6 +129,13 @@
 			clocks = <&aon_ccu BCM21664_AON_CCU_PMU>;
 			status = "disabled";
 		};
+
+		pwrmgr: pwrmgr@1010000 {
+			compatible = "brcm,bcm23550-pwrmgr";
+			reg = <0x01010000 0x4300>;
+			#power-domain-cells = <1>;
+			status = "disabled";
+		};
 	};
 
 	/* Slaves bus */

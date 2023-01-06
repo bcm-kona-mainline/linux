@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-2.0-only
+if SOC_BCM_KONA
+
+config BCM_KONA_PWRMGR
+	bool "Broadcom Kona Power Manager/Power Island support"
+	default y
+	depends on PM
+	depends on ARCH_BCM_MOBILE
+
+endif # SOC_BCM_KONA

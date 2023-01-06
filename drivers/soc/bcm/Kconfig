@@ -42,7 +42,17 @@ config SOC_BRCMSTB
 
 	  If unsure, say N.
 
+config SOC_BCM_KONA
+	bool "Broadcom Kona SoC drivers"
+	depends on ARCH_BCM_MOBILE || COMPILE_TEST
+	help
+	  Enables drivers for the Broadcom Kona series of chips.
+	  Drivers can be enabled individually within this menu.
+
+	  If unsure, say N.
+
 source "drivers/soc/bcm/bcm63xx/Kconfig"
 source "drivers/soc/bcm/brcmstb/Kconfig"
+source "drivers/soc/bcm/kona/Kconfig"
 
 endmenu
