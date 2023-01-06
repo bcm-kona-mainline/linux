@@ -371,6 +371,12 @@
 			clock-frequency = <156000000>;
 		};
 
+		pmu_bsc_var_clk: pmu_bsc_var {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <13000000>;
+		};
+
 		root_ccu: root_ccu@35001000 {
 			compatible = BCM21664_DT_ROOT_CCU_COMPAT;
 			reg = <0x35001000 0x0f00>;
@@ -382,7 +388,8 @@
 			compatible = BCM21664_DT_AON_CCU_COMPAT;
 			reg = <0x35002000 0x0f00>;
 			#clock-cells = <1>;
-			clock-output-names = "hub_timer";
+			clock-output-names = "hub_timer",
+					     "pmu";
 		};
 
 		slave_ccu: slave_ccu@3e011000 {

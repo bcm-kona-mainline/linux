@@ -26,7 +26,8 @@
 /* aon CCU clock ids */
 
 #define BCM21664_AON_CCU_HUB_TIMER		0
-#define BCM21664_AON_CCU_CLOCK_COUNT		1
+#define BCM21664_AON_CCU_PMU			1
+#define BCM21664_AON_CCU_CLOCK_COUNT		2
 
 /* master CCU clock ids */
 
