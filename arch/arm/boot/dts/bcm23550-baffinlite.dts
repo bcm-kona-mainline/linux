@@ -1,0 +1,328 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
+#include "bcm23550.dtsi"
+
+/ {
+	model = "Samsung Galaxy Grand Neo";
+	compatible = "brcm,bcm23550-baffinlite", "brcm,bcm23550", "samsung,baffinlite";
+
+	chosen {
+		stdout-path = "/slaves@3e000000/serial@1:115200n8";
+		bootargs = "console=ttyS1,115200n8 mem=994M ignore_loglevel PMOS_NO_OUTPUT_REDIRECT nosmp panic=5"; /* TODO: fix smp so we can reenable it */
+	};
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x80000000 0x3E200000>;
+	};
+
+	/* Buttons */
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		volume-up {
+			label = "Volume Up";
+			gpios = <&gpio 9 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_VOLUMEUP>;
+			/*debounce-interval = <64>;*/
+		};
+		home {
+			label = "Home";
+			gpios = <&gpio 10 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_HOMEPAGE>;
+		};
+		volume-down {
+			label = "Volume Down";
+			gpios = <&gpio 11 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_VOLUMEDOWN>;
+		};
+	};
+
+	/* USB switch */
+	i2c-gpio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+		sda-gpios = <&gpio 113 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+		scl-gpios = <&gpio 114 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+		i2c-gpio,delay-us = <2>;
+		i2c-gpio,bus = <8>;
+
+		musb@25 {
+			compatible = "fcs,fsa9480";
+			reg = <0x25>;
+			interrupt-parent = <&gpio>;
+			interrupts = <56 IRQ_TYPE_LEVEL_HIGH>;
+		};
+	};
+
+	/* TODO: Framebuffer. This seems to be the correct address, because
+	 *       if you leave it on with the format set to a8b8g8r it fades
+	 *       into black, but with the "correct" setting (as per recovery
+	 *       pixel format in downstream BoardConfig) it stays on the
+	 *       regular Samsung logo screen. Probably would be worth it to
+	 *       dump and analyze the related memory address.
+	 */
+	/*
+	framebuffer@3c200000 {
+		compatible = "simple-framebuffer";
+		reg = <0x3c200000 0x1000>;
+		width = <480>;
+		height = <800>;
+		stride = <(480 * 5)>;
+		format = "b8g8r8a8";
+	};
+	*/
+};
+
+&uartb {
+	status = "okay";
+};
+
+&uartb2 {
+	status = "okay";
+};
+
+&uartb3 {
+	status = "okay";
+};
+
+&usbotg {
+	vusb_d-supply = <&usbldo_reg>;
+	vusb_a-supply = <&iosr1_reg>;
+	dr_mode = "host";
+	snps,reset-phy-on-wake;
+	status = "okay";
+};
+
+&usbphy {
+	brcm,clear-bit-15;
+	status = "okay";
+};
+
+&bsc1 {
+	clock-frequency = <400000>;
+	status = "okay";
+};
+&bsc2 {
+	clock-frequency = <400000>;
+	status = "okay";
+};
+&bsc3 {
+	clock-frequency = <400000>;
+	status = "okay";
+};
+&bsc4 {
+	clock-frequency = <400000>;
+	status = "okay";
+};
+
+&pmu_bsc {
+	clock-frequency = <3400000>; /* 3.2mhz? Downstream refers to this as a HS bus, but it doesn't give any speed information other than that. */
+	status = "okay";
+
+	pmu: pmu@8 {
+		reg = <0x08>;
+	};
+};
+
+/* SD card */
+&sdio1 {
+	max-frequency = <48000000>;
+	cd-gpio = <&gpio 91 0>;
+	status = "okay";
+};
+
+
+/* Internal storage */
+&sdio2 {
+	non-removable;
+	max-frequency = <52000000>;
+	bus-width = <8>;
+	status = "okay";
+};
+
+/* TODO: In the downstream board.c (both for java and baffinlite) there is
+ * no sdio4 of any kind. There is, however, an sdio3, which seems to have
+ * something to do with WiFi.
+ *
+ * I don't know what it's responsible for exactly, and if it isn't defined
+ * somewhere else, and since WiFi is not a priority it is currently disabled.
+ * Mockup code following the convention from previous sdio entries will follow.
+ */
+
+/*
+&sdio3 {
+	max-frequency = <48000000>;
+	status = "okay";
+};
+*/
+
+#include "bcm59054.dtsi"
+
+&pmu {
+	compatible = "brcm,bcm59054";
+	reg = <0x08>;
+	interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>,
+		         <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
+	regulators {
+		rfldo_reg: rfldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			/*regulator-allowed-modes = <0x2 0x4 0x8>; */ /* NORMAL, IDLE, STANDBY */
+			/*regulator-initial-mode = <0x8>; */ /* REGULATOR_MODE_STANDBY */
+		};
+
+		camldo1_reg: camldo1 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			/*regulator-initial-mode = <0x8>;*/ /* REGULATOR_MODE_STANDBY */
+		};
+
+		camldo2_reg: camldo2 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			/*regulator-initial-mode = <0x8>;*/ /* REGULATOR_MODE_STANDBY */
+		};
+
+		simldo1_reg: simldo1 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			/*regulator-allowed-modes = <0x2 0x4 0x8>;*/ /* NORMAL, IDLE, STANDBY */
+		};
+
+		simldo2_reg: simldo2 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			/*regulator-allowed-modes = <0x2 0x4 0x8>;*/ /* NORMAL, IDLE, STANDBY */
+		};
+
+		sdldo_reg: sdldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		sdxldo_reg: sdxldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		mmcldo1_reg: mmcldo1 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		mmcldo2_reg: mmcldo2 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		audldo_reg: audldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			/*regulator-allowed-modes = <0x2 0x4 0x8>;*/ /* NORMAL, IDLE, STANDBY */
+			/*regulator-initial-mode = <0x8>;*/ /* REGULATOR_MODE_STANDBY */
+		};
+
+		usbldo_reg: usbldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		micldo_reg: micldo {
+			/* This regulator is locked at 1.8v */
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+		};
+
+		vibldo_reg: vibldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		gpldo1_reg: gpldo1 {
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		gpldo2_reg: gpldo2 {
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		gpldo3_reg: gpldo3 {
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		tcxldo_reg: tcxldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+		};
+
+		lvldo1_reg: lvldo1 {
+			regulator-min-microvolt = <1000000>;
+			regulator-max-microvolt = <1800000>;
+		};
+
+		lvldo2_reg: lvldo2 {
+			regulator-min-microvolt = <1000000>;
+			regulator-max-microvolt = <1786000>;
+		};
+
+		vsr_reg: vsr {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+		};
+
+		csr_reg: csr {
+			regulator-min-microvolt = <700000>;
+			regulator-max-microvolt = <1440000>;
+			regulator-always-on;
+			/* regulator-initial-mode = <0x8>; */ /* REGULATOR_MODE_STANDBY */
+		};
+
+		mmsr_reg: mmsr {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;			
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
+		};
+
+		sdsr1_reg: sdsr1 {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;			
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
+		};
+
+		sdsr2_reg: sdsr2 {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;			
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
+		};
+
+		iosr1_reg: iosr1 {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
+		};
+
+		iosr2_reg: iosr2 {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+		};
+    };
+};
