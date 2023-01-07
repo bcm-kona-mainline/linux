@@ -35,7 +35,7 @@ static struct peri_clk_data hub_timer_data = {
 	.clocks		= CLOCKS("bbl_32k",
 				 "frac_1m",
 				 "dft_19_5m"),
-	.sel		= SELECTOR(0x0a10, 0, 2),
+	.sel		= SELECTOR(0x0a10, 0, 3),
 	.trig		= TRIGGER(0x0a40, 4),
 };
 
