@@ -101,7 +101,7 @@
 
 	pmu_i2c@3500d000 {
 		compatible = "brcm,kona-i2c";
-		reg = <0x0100d000 0xfff>;
+		reg = <0x3500d000 0xfff>;
 		interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
 		#address-cells = <1>;
 		#size-cells = <0>;
