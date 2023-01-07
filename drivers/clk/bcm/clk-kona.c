@@ -961,6 +961,75 @@ static int selector_write(struct ccu_data *ccu, struct bcm_clk_gate *gate,
 	return ret;
 }
 
+/* CCU operations */
+
+static void kona_ccu_set_voltage(struct ccu_data *ccu, int voltage_reg_num,
+				u8 voltage_policy_id)
+{
+	unsigned long flags;
+	u32 offset;
+	u32 value;
+	u8 shift;
+
+	flags = ccu_lock(ccu);
+
+	if (voltage_reg_num <= 3) {
+		shift = voltage_reg_num << 3;
+		offset = ccu->voltage.offset1;
+	} else if ((voltage_reg_num <= 7) && ccu->voltage.offset2) {
+		shift = (voltage_reg_num - 4) << 3;
+		offset = ccu->voltage.offset2;
+	} else {
+		BUG();
+	}
+
+	value = __ccu_read(ccu, offset);
+	value = (value & ~(0xF << shift)) |
+		((voltage_policy_id & 0xF) << shift);
+
+	__ccu_write(ccu, offset, value);
+
+	ccu_unlock(ccu, flags);
+}
+
+static void kona_ccu_set_peri_voltage(struct ccu_data *ccu, u8 peri_volt_reg_num,
+				u8 peri_volt_policy_id)
+{
+	unsigned long flags;
+	u32 value;
+	u8 shift;
+
+	flags = ccu_lock(ccu);
+
+	shift = peri_volt_reg_num << 3;
+	value = __ccu_read(ccu, ccu->peri_volt.offset);
+	value = (value & ~(0xF << shift)) |
+		((peri_volt_policy_id & 0xF) << shift);
+
+	__ccu_write(ccu, ccu->peri_volt.offset, value);
+
+	ccu_unlock(ccu, flags);
+}
+
+static void kona_ccu_set_freq_policy(struct ccu_data *ccu, u8 freq_policy_reg_num,
+				u8 freq_policy_policy_id)
+{
+	unsigned long flags;
+	u32 value;
+	u8 shift;
+
+	flags = ccu_lock(ccu);
+
+	shift = freq_policy_reg_num << 3;
+	value = __ccu_read(ccu, ccu->freq_policy.offset);
+	value = (value & ~(0x7 << shift)) |
+		(freq_policy_policy_id << shift);
+
+	__ccu_write(ccu, ccu->freq_policy.offset, value);
+
+	ccu_unlock(ccu, flags);
+}
+
 /* Clock operations */
 
 static int kona_peri_clk_enable(struct clk_hw *hw)
@@ -1254,7 +1323,48 @@ bool __init kona_ccu_init(struct ccu_data *ccu)
 
 	flags = ccu_lock(ccu);
 	__ccu_write_enable(ccu);
+	if (!__ccu_policy_engine_stop(ccu))
+		pr_err("Could not stop policy engine");
 
+	/* Enable all policies */
+	if (ccu_policy_exists(&ccu->policy)) {
+		for (which = 0; which < CCU_POLICY_MAX; which++) {
+			if (ccu->policy.mask.mask1_offset != 0)
+				__ccu_write(ccu, ccu->policy.mask.mask1_offset + (4 * which),
+					    CCU_POLICY_ENABLE_ALL);
+
+			if (ccu->policy.mask.mask2_offset != 0)
+				__ccu_write(ccu, ccu->policy.mask.mask2_offset + (4 * which),
+					    CCU_POLICY_ENABLE_ALL);
+		}
+	}
+
+	/* Set voltage from voltage tables */
+	if (ccu_voltage_exists(&ccu->voltage)) {
+		for (which = 0; which < ccu->voltage.voltage_table_len; which++) {
+			kona_ccu_set_voltage(ccu, which, ccu->voltage.voltage_table[which]);
+		}
+	}
+
+	/* Set peripheral voltage from voltage tables */
+	if (ccu_peri_volt_exists(&ccu->peri_volt)) {
+		for (which = 0; which < ccu->peri_volt.peri_volt_table_len; which++) {
+			kona_ccu_set_peri_voltage(ccu, which,
+					ccu->peri_volt.peri_volt_table[which]);
+		}
+	}
+
+	/* Set peripheral voltage from voltage tables */
+	if (ccu_freq_policy_exists(&ccu->freq_policy)) {
+		for (which = 0; which < ccu->freq_policy.freq_policy_table_len; which++) {
+			kona_ccu_set_freq_policy(ccu, which,
+					ccu->freq_policy.freq_policy_table[which]);
+		}
+	}
+
+	__ccu_policy_engine_start(ccu, true);
+
+	/* Initialize clocks */
 	for (which = 0; which < ccu->clk_num; which++) {
 		struct kona_clk *bcm_clk = &kona_clks[which];
 

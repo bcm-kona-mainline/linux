@@ -55,6 +55,33 @@ static struct ccu_data aon_ccu_data = {
 	.policy		= {
 		.enable		= CCU_LVM_EN(0x0034, 0),
 		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
+		.mask		= CCU_POLICY_MASK(0x0010, 0),
+	},
+	.voltage	= {
+		CCU_VOLTAGE_OFFSET(0x0040, 0x0044),
+		.voltage_table = {
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+		},
+		.voltage_table_len = 5,
+	},
+	.peri_volt	= {
+		.offset = 0x0030,
+		.peri_volt_table = {
+			CCU_PERI_VOLT_NORMAL,
+			CCU_PERI_VOLT_HIGH,
+		},
+		.peri_volt_table_len = 2,
+	},
+	.freq_policy	= {
+		.offset = 0x0008,
+		.freq_policy_table = {
+			1, 1, 2, 2 /* ECO, ECO, NORMAL, NORMAL */
+		},
+		.freq_policy_table_len = 4,
 	},
 	.kona_clks	= {
 		[BCM21664_AON_CCU_HUB_TIMER] =
@@ -140,6 +167,36 @@ static struct ccu_data master_ccu_data = {
 	.policy		= {
 		.enable		= CCU_LVM_EN(0x0034, 0),
 		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
+		.mask		= CCU_POLICY_MASK(0x0010, 0),
+	},
+	.voltage	= {
+		CCU_VOLTAGE_OFFSET(0x0040, 0x0044),
+		.voltage_table = {
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+		},
+		.voltage_table_len = 8,
+	},
+	.peri_volt	= {
+		.offset = 0x0030,
+		.peri_volt_table = {
+			CCU_PERI_VOLT_NORMAL,
+			CCU_PERI_VOLT_HIGH,
+		},
+		.peri_volt_table_len = 2,
+	},
+	.freq_policy	= {
+		.offset = 0x0008,
+		.freq_policy_table = {
+			2, 2, 3, 3 /* ECO, ECO, NORMAL, NORMAL */
+		},
+		.freq_policy_table_len = 4,
 	},
 	.kona_clks	= {
 		[BCM21664_MASTER_CCU_SDIO1] =
@@ -243,6 +300,34 @@ static struct ccu_data slave_ccu_data = {
        .policy		= {
 		.enable		= CCU_LVM_EN(0x0034, 0),
 		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
+		.mask		= CCU_POLICY_MASK(0x0010, 0),
+	},
+	.voltage	= {
+		CCU_VOLTAGE_OFFSET(0x0040, 0x0044),
+		.voltage_table = {
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+			CCU_VOLTAGE_ECO,
+		},
+		.voltage_table_len = 6,
+	},
+	.peri_volt	= {
+		.offset = 0x0030,
+		.peri_volt_table = {
+			CCU_PERI_VOLT_NORMAL,
+			CCU_PERI_VOLT_HIGH,
+		},
+		.peri_volt_table_len = 2,
+	},
+	.freq_policy	= {
+		.offset = 0x0008,
+		.freq_policy_table = {
+			1, 1, 3, 3 /* ECO, ECO, NORMAL, NORMAL */
+		},
+		.freq_policy_table_len = 4,
 	},
 	.kona_clks	= {
 		[BCM21664_SLAVE_CCU_UARTB] =

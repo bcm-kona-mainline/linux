@@ -38,6 +38,9 @@
 /* CCU field state tests */
 
 #define ccu_policy_exists(ccu_policy)	((ccu_policy)->enable.offset != 0)
+#define ccu_voltage_exists(ccu_voltage)	((ccu_voltage)->offset1 != 0)
+#define ccu_peri_volt_exists(ccu_peri_volt)	((ccu_peri_volt)->offset != 0)
+#define ccu_freq_policy_exists(ccu_freq_policy)	((ccu_freq_policy)->offset != 0)
 
 /* Clock field state tests */
 
@@ -453,9 +456,78 @@ struct bcm_policy_ctl {
 		.atl_bit = (_atl_bit),					\
 	}
 
+
+/* CCU policy masks */
+enum {
+	CCU_POLICY_0,
+	CCU_POLICY_1,
+	CCU_POLICY_2,
+	CCU_POLICY_3,
+	CCU_POLICY_MAX,
+};
+
+#define CCU_POLICY_ENABLE_ALL	0x7FFFFFFF
+
+struct bcm_policy_mask {
+	u32 mask1_offset;
+	u32 mask2_offset;
+};
+
+/* Policy mask initialization macro */
+#define CCU_POLICY_MASK(_mask1_offset, _mask2_offset)			\
+	{								\
+		.mask1_offset = (_mask1_offset),			\
+		.mask2_offset = (_mask2_offset),			\
+	}
+
+
 struct ccu_policy {
 	struct bcm_lvm_en enable;
 	struct bcm_policy_ctl control;
+	struct bcm_policy_mask mask;
+};
+
+/* CCU voltage policy IDs */
+#define CCU_VOLATGE_OFF		0x0
+#define CCU_VOLTAGE_RETN	0x1
+#define CCU_VOLTAGE_WAKEUP	0x2
+
+#define CCU_VOLTAGE_ECO		0x9
+#define CCU_VOLTAGE_NORMAL	0xB
+#define CCU_VOLTAGE_TURBO	0xD
+#define CCU_VOLTAGE_SUPER_TURBO	0xF
+
+#define CCU_VOLTAGE_A9_ECO		0x8
+#define CCU_VOLTAGE_A9_NORMAL	0xA
+#define CCU_VOLTAGE_A9_TURBO	0xC
+#define CCU_VOLTAGE_A9_SUPER_TURBO	0xE
+
+#define CCU_VOLTAGE_OFFSET(_offset1, _offset2)				\
+	.offset1 = _offset1,						\
+	.offset2 = _offset2
+
+struct ccu_voltage {
+	u32 offset1; /* 0-3 */
+	u32 offset2; /* 4-7 */
+	u32 voltage_table[8]; /* Array of voltage IDs */
+	size_t voltage_table_len;
+};
+
+/* CCU peripheral voltage policy IDs */
+#define CCU_PERI_VOLT_NORMAL	0
+#define CCU_PERI_VOLT_HIGH	0
+
+struct ccu_peri_volt {
+	u32 offset;
+	u32 peri_volt_table[2];
+	size_t peri_volt_table_len;
+};
+
+/* CCU frequency policy data */
+struct ccu_freq_policy {
+	u32 offset;
+	u32 freq_policy_table[4];
+	size_t freq_policy_table_len;
 };
 
 /*
@@ -472,6 +544,9 @@ struct ccu_data {
 	spinlock_t lock;	/* serialization lock */
 	bool write_enabled;	/* write access is currently enabled */
 	struct ccu_policy policy;
+	struct ccu_voltage voltage;
+	struct ccu_peri_volt peri_volt;
+	struct ccu_freq_policy freq_policy;
 	struct device_node *node;
 	size_t clk_num;
 	const char *name;
