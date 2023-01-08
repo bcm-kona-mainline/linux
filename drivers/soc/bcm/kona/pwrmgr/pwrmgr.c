@@ -17,6 +17,7 @@
 #include <linux/pm_domain.h>
 #include <linux/slab.h>
 
+#include <soc/bcmkona-pwrmgr.h>
 #include "pwrmgr.h"
 
 struct kona_pi {
@@ -385,7 +386,7 @@ static const struct of_device_id kona_pwrmgr_match[] = {
  * so we start initialization in an early initcall.
  */
 
-static int __init kona_pwrmgr_early_init(void)
+int __init kona_pwrmgr_early_init(void)
 {
 	const struct of_device_id *match;
 	struct device_node *np;
@@ -489,4 +490,5 @@ static int __init kona_pwrmgr_early_init(void)
 
 	return 0;
 }
-early_initcall(kona_pwrmgr_early_init);
+EXPORT_SYMBOL(kona_pwrmgr_early_init);
+//early_initcall(kona_pwrmgr_early_init);
