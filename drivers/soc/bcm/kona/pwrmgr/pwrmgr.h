@@ -13,7 +13,9 @@
 #define PWRMGR_VO0_I2C_CMD_PTR_OFFSET	0x4008 /* V01 - 0x400C, V02 - 0x4010 */
 #define PWRMGR_VO0_I2C_CMD_ADDL_PTR_OFFSET	0x41C0 /* V01 - 0x41C4, V02 - 0x41C8 */
 
+#define PWRMGR_PI_DEFAULT_POWER_STATE_OFFSET 0x4024
 #define PWRMGR_PC_PIN_OVERRIDE_CTRL_OFFSET 0x4028
+
 #define PWRMGR_I2C_ENABLE_OFFSET	0x4100
 #define PWRMGR_SEQ_CMD_BANK0_OFFSET	0x4104
 #define PWRMGR_SEQ_CMD_BANK1_OFFSET	0x4280
@@ -38,6 +40,8 @@ struct kona_pi_info {
 	u32 ac_shift;
 	u32 atl_shift;
 	u32 pm_policy_shift;
+
+	u32 wakeup_override_shift;
 };
 
 struct pi_state {

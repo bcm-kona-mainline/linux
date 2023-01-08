@@ -2,6 +2,10 @@
 /*
  * Broadcom Kona Power Manager/Power Islands driver
  * Copyright (c) 2022 Artur Weber <aweber@dithernet.org>
+ *
+ * NOTE: this driver is *very* early work-in-progress. PI setup
+ * is not 100% implemented yet. This driver only does the basic
+ * initialization.
  */
 
 #include <dt-bindings/soc/brcm,kona-pi.h>
@@ -14,8 +18,6 @@
 #include <linux/slab.h>
 
 #include "pwrmgr.h"
-
-/* Power Islands */
 
 struct kona_pi {
 	int domain_id;
@@ -46,6 +48,23 @@ static u32 kona_pwrmgr_readl(struct kona_pwrmgr *pwrmgr, u32 offset)
 static void kona_pwrmgr_writel(struct kona_pwrmgr *pwrmgr, u32 value, u32 offset)
 {
 	writel(value, pwrmgr->base + offset);
+}
+
+/* Power Islands */
+
+static void kona_pwrmgr_pi_set_wakeup_override(int pi_id, bool clear)
+{
+	struct kona_pi_info pi_info = pwrmgr->info->pi_info[pi_id];
+	u32 val;
+
+	val = kona_pwrmgr_readl(pwrmgr, PWRMGR_PI_DEFAULT_POWER_STATE_OFFSET);
+
+	if (clear)
+		val &= ~(1 << pi_info.wakeup_override_shift);
+	else
+		val |= (1 << pi_info.wakeup_override_shift);
+
+	kona_pwrmgr_writel(pwrmgr, val, PWRMGR_PI_DEFAULT_POWER_STATE_OFFSET);
 }
 
 /* Events */
@@ -127,9 +146,9 @@ static void kona_pwrmgr_event_set_trig_type(int event_id, int event_trig_type)
 static void kona_pwrmgr_event_set_pi_policy(int event_id, int pi_id,
 				bool ac, bool atl, int policy)
 {
-	u32 val;
-	u32 policy_offset;
 	struct kona_pi_info pi_info = pwrmgr->info->pi_info[pi_id];
+	u32 policy_offset;
+	u32 val;
 
 	BUG_ON(event_id >= PWRMGR_NUM_EVENTS);
 	policy_offset = pi_info.policy_reg_offset;
@@ -212,6 +231,8 @@ static int kona_pwrmgr_pi_power_off(struct generic_pm_domain *domain)
 static void kona_pwrmgr_pi_init(int pi_id)
 {
 	struct kona_pi *domain = &pwrmgr->domains[pi_id];
+
+	kona_pwrmgr_pi_set_wakeup_override(pi_id, false);
 
 	domain->domain_id = pi_id;
 	domain->info = pwrmgr->info->pi_info[pi_id];
@@ -394,74 +415,77 @@ static int __init kona_pwrmgr_early_init(void)
 		return -ENXIO;
 	}
 
-	pwrmgr->info = match->data;
+	if (of_device_is_available(np)) {
+		pwrmgr->info = match->data;
 
-	pwrmgr->kona_pi_onecell.domains = kcalloc(ARRAY_SIZE(pwrmgr->domains),
-			sizeof(*pwrmgr->domains),
-			GFP_KERNEL);
-	if (!pwrmgr->kona_pi_onecell.domains)
-		return -ENOMEM;
-	pwrmgr->kona_pi_onecell.num_domains = ARRAY_SIZE(pwrmgr->domains);
+		pwrmgr->kona_pi_onecell.domains = kcalloc(ARRAY_SIZE(pwrmgr->domains),
+				sizeof(*pwrmgr->domains),
+				GFP_KERNEL);
+		if (!pwrmgr->kona_pi_onecell.domains)
+			return -ENOMEM;
+		pwrmgr->kona_pi_onecell.num_domains = ARRAY_SIZE(pwrmgr->domains);
 
-	/* Initialize sequencer with dummy values */
-	kona_pwrmgr_seq_init(i2c_dummy_seq_cmds, i2c_dummy_seq_num_cmds,
-			pwrmgr->info->dummy_seq_v0_data,
-			pwrmgr->info->dummy_seq_v1_data);
+		/* Initialize sequencer with dummy values */
+		kona_pwrmgr_seq_init(i2c_dummy_seq_cmds, i2c_dummy_seq_num_cmds,
+				pwrmgr->info->dummy_seq_v0_data,
+				pwrmgr->info->dummy_seq_v1_data);
 
-	/* Clear all events */
-	kona_pwrmgr_clear_events(LCDTE_EVENT, PWRMGR_NUM_EVENTS - 1);
+		/* Clear all events */
+		kona_pwrmgr_clear_events(LCDTE_EVENT, PWRMGR_NUM_EVENTS - 1);
 
-	kona_pwrmgr_event_set_active(SOFTWARE_2_EVENT, true);
-	kona_pwrmgr_event_set_active(SOFTWARE_0_EVENT, true);
-
-	/* Prepare PC pins for sequencer */
-	kona_pwrmgr_pc_set_sw_override(PC0, false, 0);
-	kona_pwrmgr_pc_set_clkreq_override(PC0, true, 1);
-
-	kona_pwrmgr_pc_set_sw_override(PC1, false, 0);
-	kona_pwrmgr_pc_set_sw_override(PC2, false, 0);
-	kona_pwrmgr_pc_set_sw_override(PC3, false, 0);
-	kona_pwrmgr_pc_set_clkreq_override(PC1, false, 0);
-	kona_pwrmgr_pc_set_clkreq_override(PC2, false, 0);
-	kona_pwrmgr_pc_set_clkreq_override(PC3, false, 0);
-
-	/* Enable sequencer */
-	kona_pwrmgr_seq_enable(true);
-
-	/* Initialize event table */
-	for (i = 0; i < pwrmgr->info->event_table_length; i++) {
-		event = pwrmgr->info->event_table[i];
-
-		kona_pwrmgr_event_set_trig_type(event.event_id, event.trig_type);
-
-		kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_MODEM,
-				ac, atl, event.policy_modem);
-		kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_ARM_CORE,
-				ac, atl, event.policy_arm);
-		kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_ARM_SUBSYSTEM,
-				ac, atl, event.policy_arm_sub);
-		kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_HUB_AON,
-				ac, atl, event.policy_aon);
-		kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_HUB_SWITCHABLE,
-				ac, atl, event.policy_hub);
-		kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_MM,
-				ac, atl, event.policy_mm);
-	}
-
-	/* Initialize power domains */
-	for (i = 0; i < BCMKONA_POWER_DOMAIN_COUNT; i++) {
-		kona_pwrmgr_pi_init(i);
-		/* TODO: error checking */
-	}
-
-	/* HACK: enable all power domains */
-	for (i = 0; i < BCMKONA_POWER_DOMAIN_COUNT; i++) {
-		kona_pwrmgr_event_set_active(SOFTWARE_0_EVENT, false);
-		kona_pwrmgr_event_set_pi_policy(SOFTWARE_0_EVENT, i, true, false, PI_POLICY_RET);
+		kona_pwrmgr_event_set_active(SOFTWARE_2_EVENT, true);
 		kona_pwrmgr_event_set_active(SOFTWARE_0_EVENT, true);
-	}
 
-	pr_info("kona-pwrmgr: initialized");
+		/* Prepare PC pins for sequencer */
+		kona_pwrmgr_pc_set_sw_override(PC0, false, 0);
+		kona_pwrmgr_pc_set_clkreq_override(PC0, true, 1);
+
+		kona_pwrmgr_pc_set_sw_override(PC1, false, 0);
+		kona_pwrmgr_pc_set_sw_override(PC2, false, 0);
+		kona_pwrmgr_pc_set_sw_override(PC3, false, 0);
+		kona_pwrmgr_pc_set_clkreq_override(PC1, false, 0);
+		kona_pwrmgr_pc_set_clkreq_override(PC2, false, 0);
+		kona_pwrmgr_pc_set_clkreq_override(PC3, false, 0);
+
+		/* Enable sequencer */
+		kona_pwrmgr_seq_enable(true);
+
+		/* Initialize event table */
+		for (i = 0; i < pwrmgr->info->event_table_length; i++) {
+			event = pwrmgr->info->event_table[i];
+
+			kona_pwrmgr_event_set_trig_type(event.event_id, event.trig_type);
+
+			kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_MODEM,
+					ac, atl, event.policy_modem);
+			kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_ARM_CORE,
+					ac, atl, event.policy_arm);
+			kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_ARM_SUBSYSTEM,
+					ac, atl, event.policy_arm_sub);
+			kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_HUB_AON,
+					ac, atl, event.policy_aon);
+			kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_HUB_SWITCHABLE,
+					ac, atl, event.policy_hub);
+			kona_pwrmgr_event_set_pi_policy(event.event_id, BCMKONA_POWER_DOMAIN_MM,
+					ac, atl, event.policy_mm);
+		}
+
+		/* Initialize power domains */
+		for (i = 0; i < BCMKONA_POWER_DOMAIN_COUNT; i++) {
+			kona_pwrmgr_pi_init(i);
+			/* TODO: error checking */
+		}
+
+		/* HACK: enable all power domains */
+		for (i = 0; i < BCMKONA_POWER_DOMAIN_COUNT; i++) {
+			kona_pwrmgr_event_set_active(SOFTWARE_0_EVENT, false);
+			kona_pwrmgr_event_set_pi_policy(SOFTWARE_0_EVENT, i, true, false, PI_POLICY_RET);
+			kona_pwrmgr_event_set_active(SOFTWARE_0_EVENT, true);
+		}
+
+		pr_info("kona-pwrmgr: initialized");
+		of_node_put(np);
+	}
 
 	return 0;
 }

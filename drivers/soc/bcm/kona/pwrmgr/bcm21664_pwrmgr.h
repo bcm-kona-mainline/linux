@@ -329,6 +329,8 @@ static const struct kona_pi_info bcm21664_pi_info_mm = {
 	.ac_shift = 12,
 	.atl_shift = 11,
 	.pm_policy_shift = 8,
+
+	.wakeup_override_shift = 2,
 };
 
 static const struct pi_state bcm21664_pi_states_hub[] = {
@@ -353,6 +355,8 @@ static const struct kona_pi_info bcm21664_pi_info_hub_switchable = {
 	.ac_shift = 4,
 	.atl_shift = 3,
 	.pm_policy_shift = 0,
+
+	.wakeup_override_shift = 4,
 };
 
 static const struct kona_pi_info bcm21664_pi_info_hub_aon = {
@@ -363,6 +367,8 @@ static const struct kona_pi_info bcm21664_pi_info_hub_aon = {
 	.ac_shift = 12,
 	.atl_shift = 11,
 	.pm_policy_shift = 8,
+
+	.wakeup_override_shift = 5,
 };
 
 static const struct pi_state bcm21664_pi_states_arm_core[] = {
@@ -393,6 +399,8 @@ static const struct kona_pi_info bcm21664_pi_info_arm_core = {
 	.ac_shift = 4,
 	.atl_shift = 3,
 	.pm_policy_shift = 0,
+
+	.wakeup_override_shift = 0,
 };
 
 static const struct pi_state bcm21664_pi_states_arm_subsystem[] = {
@@ -417,6 +425,8 @@ static const struct kona_pi_info bcm21664_pi_info_arm_subsystem = {
 	.ac_shift = 4,
 	.atl_shift = 3,
 	.pm_policy_shift = 0,
+
+	.wakeup_override_shift = 3,
 };
 
 static const struct pi_state bcm21664_pi_states_modem[] = {
@@ -435,6 +445,8 @@ static const struct kona_pi_info bcm21664_pi_info_modem = {
 	.ac_shift = 9,
 	.atl_shift = 8,
 	.pm_policy_shift = 5,
+
+	.wakeup_override_shift = 6,
 };
 
 static struct kona_pi_info bcm21664_pi_info[] = {
