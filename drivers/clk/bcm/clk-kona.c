@@ -1320,6 +1320,7 @@ bool __init kona_ccu_init(struct ccu_data *ccu)
 	unsigned int which;
 	struct kona_clk *kona_clks = ccu->kona_clks;
 	bool success = true;
+	u32 val;
 
 	flags = ccu_lock(ccu);
 	__ccu_write_enable(ccu);
@@ -1372,6 +1373,15 @@ bool __init kona_ccu_init(struct ccu_data *ccu)
 			continue;
 
 		success &= __kona_clk_init(bcm_clk);
+	}
+
+	/* For BCM21664 ROOT CCU, we need to enable the 8ph pll1 ref clock manually. */
+	if (!strcmp(ccu->name, "root_ccu")) {
+		pr_info("Need to initialize 8ph pll1");
+
+		val = __ccu_read(ccu, 0x0C3C);
+		val |= 0x00800000;
+		__ccu_write(ccu, 0x0C3C, val);
 	}
 
 	__ccu_write_disable(ccu);
