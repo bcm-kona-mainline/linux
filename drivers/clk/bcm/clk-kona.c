@@ -1030,7 +1030,7 @@ static void kona_ccu_set_freq_policy(struct ccu_data *ccu, u8 freq_policy_reg_nu
 	ccu_unlock(ccu, flags);
 }
 
-/* Clock operations */
+/* Peripheral clock operations */
 
 static int kona_peri_clk_enable(struct clk_hw *hw)
 {
@@ -1302,11 +1302,45 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
 	return true;
 }
 
+/*
+ * Bus clock operations. These are largely the same as peripheral clocks,
+ * so we can re-use the functions.
+ */
+
+struct clk_ops kona_bus_clk_ops = {
+	.enable = kona_peri_clk_enable,
+	.disable = kona_peri_clk_disable,
+	.is_enabled = kona_peri_clk_is_enabled,
+};
+
+/* Put a bus clock into its initial state */
+static bool __bus_clk_init(struct kona_clk *bcm_clk)
+{
+	struct ccu_data *ccu = bcm_clk->ccu;
+	struct clk_reg_data *bus = bcm_clk->u.reg_data;
+	const char *name = bcm_clk->init_data.name;
+
+	BUG_ON(bcm_clk->type != bcm_clk_bus);
+
+	if (!gate_init(ccu, &bus->gate)) {
+		pr_err("%s: error initializing gate for %s\n", __func__, name);
+		return false;
+	}
+	if (!hyst_init(ccu, &bus->hyst)) {
+		pr_err("%s: error initializing hyst for %s\n", __func__, name);
+		return false;
+	}
+
+	return true;
+}
+
 static bool __kona_clk_init(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
 	case bcm_clk_peri:
 		return __peri_clk_init(bcm_clk);
+	case bcm_clk_bus:
+		return __bus_clk_init(bcm_clk);
 	default:
 		BUG();
 	}
