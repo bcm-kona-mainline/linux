@@ -325,7 +325,7 @@ static struct ccu_data slave_ccu_data = {
 	.freq_policy	= {
 		.offset = 0x0008,
 		.freq_policy_table = {
-			1, 1, 3, 3 /* ECO, ECO, NORMAL, NORMAL */
+			2, 2, 3, 3 /* ECO, ECO, NORMAL, NORMAL */
 		},
 		.freq_policy_table_len = 4,
 	},
