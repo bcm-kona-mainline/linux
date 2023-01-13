@@ -42,7 +42,7 @@ static bool ccu_data_offsets_valid(struct ccu_data *ccu)
 
 static bool clk_requires_trigger(struct kona_clk *bcm_clk)
 {
-	struct peri_clk_data *peri = bcm_clk->u.peri;
+	struct clk_reg_data *peri = bcm_clk->u.reg_data;
 	struct bcm_clk_sel *sel;
 	struct bcm_clk_div *div;
 
@@ -66,9 +66,9 @@ static bool clk_requires_trigger(struct kona_clk *bcm_clk)
 	return divider_exists(div) && !divider_is_fixed(div);
 }
 
-static bool peri_clk_data_offsets_valid(struct kona_clk *bcm_clk)
+static bool clk_reg_data_offsets_valid(struct kona_clk *bcm_clk)
 {
-	struct peri_clk_data *peri;
+	struct clk_reg_data *peri;
 	struct bcm_clk_policy *policy;
 	struct bcm_clk_gate *gate;
 	struct bcm_clk_hyst *hyst;
@@ -80,7 +80,7 @@ static bool peri_clk_data_offsets_valid(struct kona_clk *bcm_clk)
 	u32 limit;
 
 	BUG_ON(bcm_clk->type != bcm_clk_peri);
-	peri = bcm_clk->u.peri;
+	peri = bcm_clk->u.reg_data;
 	name = bcm_clk->init_data.name;
 	range = bcm_clk->ccu->range;
 
@@ -359,7 +359,7 @@ static bool div_valid(struct bcm_clk_div *div, const char *field_name,
  */
 static bool kona_dividers_valid(struct kona_clk *bcm_clk)
 {
-	struct peri_clk_data *peri = bcm_clk->u.peri;
+	struct clk_reg_data *peri = bcm_clk->u.reg_data;
 	struct bcm_clk_div *div;
 	struct bcm_clk_div *pre_div;
 	u32 limit;
@@ -389,9 +389,9 @@ static bool trig_valid(struct bcm_clk_trig *trig, const char *field_name,
 
 /* Determine whether the set of peripheral clock registers are valid. */
 static bool
-peri_clk_data_valid(struct kona_clk *bcm_clk)
+clk_reg_data_valid(struct kona_clk *bcm_clk)
 {
-	struct peri_clk_data *peri;
+	struct clk_reg_data *peri;
 	struct bcm_clk_policy *policy;
 	struct bcm_clk_gate *gate;
 	struct bcm_clk_hyst *hyst;
@@ -408,10 +408,10 @@ peri_clk_data_valid(struct kona_clk *bcm_clk)
 	 * where we need something from the ccu, so we do these
 	 * together.
 	 */
-	if (!peri_clk_data_offsets_valid(bcm_clk))
+	if (!clk_reg_data_offsets_valid(bcm_clk))
 		return false;
 
-	peri = bcm_clk->u.peri;
+	peri = bcm_clk->u.reg_data;
 	name = bcm_clk->init_data.name;
 
 	policy = &peri->policy;
@@ -485,7 +485,7 @@ static bool kona_clk_valid(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
 	case bcm_clk_peri:
-		if (!peri_clk_data_valid(bcm_clk))
+		if (!clk_reg_data_valid(bcm_clk))
 			return false;
 		break;
 	default:
@@ -650,7 +650,7 @@ static void clk_sel_teardown(struct bcm_clk_sel *sel,
 	init_data->parent_names = NULL;
 }
 
-static void peri_clk_teardown(struct peri_clk_data *data,
+static void peri_clk_teardown(struct clk_reg_data *data,
 				struct clk_init_data *init_data)
 {
 	clk_sel_teardown(&data->sel, init_data);
@@ -663,7 +663,7 @@ static void peri_clk_teardown(struct peri_clk_data *data,
  * associated with it.
  */
 static int
-peri_clk_setup(struct peri_clk_data *data, struct clk_init_data *init_data)
+peri_clk_setup(struct clk_reg_data *data, struct clk_init_data *init_data)
 {
 	init_data->flags = CLK_IGNORE_UNUSED;
 

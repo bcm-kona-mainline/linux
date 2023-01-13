@@ -382,7 +382,7 @@ struct bcm_clk_trig {
 		.flags = FLAG(TRIG, EXISTS),				\
 	}
 
-struct peri_clk_data {
+struct clk_reg_data {
 	struct bcm_clk_policy policy;
 	struct bcm_clk_gate gate;
 	struct bcm_clk_hyst hyst;
@@ -403,7 +403,7 @@ struct kona_clk {
 	enum bcm_clk_type type;
 	union {
 		void *data;
-		struct peri_clk_data *peri;
+		struct clk_reg_data *reg_data;
 	} u;
 };
 #define to_kona_clk(_hw) \

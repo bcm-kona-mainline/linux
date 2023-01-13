@@ -12,7 +12,7 @@
 
 /* Root CCU */
 
-static struct peri_clk_data frac_1m_data = {
+static struct clk_reg_data frac_1m_data = {
 	.gate		= HW_SW_GATE(0x214, 16, 0, 1),
 	.clocks		= CLOCKS("ref_crystal"),
 };
@@ -29,7 +29,7 @@ static struct ccu_data root_ccu_data = {
 
 /* AON CCU */
 
-static struct peri_clk_data hub_timer_data = {
+static struct clk_reg_data hub_timer_data = {
 	.gate		= HW_SW_GATE(0x0414, 16, 0, 1),
 	.hyst		= HYST(0x0414, 8, 9),
 	.clocks		= CLOCKS("bbl_32k",
@@ -39,7 +39,7 @@ static struct peri_clk_data hub_timer_data = {
 	.trig		= TRIGGER(0x0a40, 4),
 };
 
-static struct peri_clk_data pmu_data = {
+static struct clk_reg_data pmu_data = {
 	.gate		= HW_SW_GATE(0x0418, 16, 0, 1),
 	.hyst		= HYST(0x0418, 8, 9),
 	.clocks		= CLOCKS("ref_crystal",
@@ -94,7 +94,7 @@ static struct ccu_data aon_ccu_data = {
 
 /* Master CCU */
 
-static struct peri_clk_data sdio1_data = {
+static struct clk_reg_data sdio1_data = {
 	.gate		= HW_SW_GATE(0x0358, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_52m",
@@ -106,7 +106,7 @@ static struct peri_clk_data sdio1_data = {
 	.trig		= TRIGGER(0x0afc, 9),
 };
 
-static struct peri_clk_data sdio2_data = {
+static struct clk_reg_data sdio2_data = {
 	.gate		= HW_SW_GATE(0x035c, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_52m",
@@ -118,7 +118,7 @@ static struct peri_clk_data sdio2_data = {
 	.trig		= TRIGGER(0x0afc, 10),
 };
 
-static struct peri_clk_data sdio3_data = {
+static struct clk_reg_data sdio3_data = {
 	.gate		= HW_SW_GATE(0x0364, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_52m",
@@ -130,7 +130,7 @@ static struct peri_clk_data sdio3_data = {
 	.trig		= TRIGGER(0x0afc, 12),
 };
 
-static struct peri_clk_data sdio4_data = {
+static struct clk_reg_data sdio4_data = {
 	.gate		= HW_SW_GATE(0x0360, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_52m",
@@ -142,22 +142,22 @@ static struct peri_clk_data sdio4_data = {
 	.trig		= TRIGGER(0x0afc, 11),
 };
 
-static struct peri_clk_data sdio1_sleep_data = {
+static struct clk_reg_data sdio1_sleep_data = {
 	.clocks		= CLOCKS("ref_32k"),	/* Verify */
 	.gate		= HW_SW_GATE(0x0358, 18, 2, 3),
 };
 
-static struct peri_clk_data sdio2_sleep_data = {
+static struct clk_reg_data sdio2_sleep_data = {
 	.clocks		= CLOCKS("ref_32k"),	/* Verify */
 	.gate		= HW_SW_GATE(0x035c, 18, 2, 3),
 };
 
-static struct peri_clk_data sdio3_sleep_data = {
+static struct clk_reg_data sdio3_sleep_data = {
 	.clocks		= CLOCKS("ref_32k"),	/* Verify */
 	.gate		= HW_SW_GATE(0x0364, 18, 2, 3),
 };
 
-static struct peri_clk_data sdio4_sleep_data = {
+static struct clk_reg_data sdio4_sleep_data = {
 	.clocks		= CLOCKS("ref_32k"),	/* Verify */
 	.gate		= HW_SW_GATE(0x0360, 18, 2, 3),
 };
@@ -221,7 +221,7 @@ static struct ccu_data master_ccu_data = {
 
 /* Slave CCU */
 
-static struct peri_clk_data uartb_data = {
+static struct clk_reg_data uartb_data = {
 	.gate		= HW_SW_GATE(0x0400, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_156m",
@@ -231,7 +231,7 @@ static struct peri_clk_data uartb_data = {
 	.trig		= TRIGGER(0x0afc, 2),
 };
 
-static struct peri_clk_data uartb2_data = {
+static struct clk_reg_data uartb2_data = {
 	.gate		= HW_SW_GATE(0x0404, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_156m",
@@ -241,7 +241,7 @@ static struct peri_clk_data uartb2_data = {
 	.trig		= TRIGGER(0x0afc, 3),
 };
 
-static struct peri_clk_data uartb3_data = {
+static struct clk_reg_data uartb3_data = {
 	.gate		= HW_SW_GATE(0x0408, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_156m",
@@ -251,7 +251,7 @@ static struct peri_clk_data uartb3_data = {
 	.trig		= TRIGGER(0x0afc, 4),
 };
 
-static struct peri_clk_data bsc1_data = {
+static struct clk_reg_data bsc1_data = {
 	.gate		= HW_SW_GATE(0x0458, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_104m",
@@ -262,7 +262,7 @@ static struct peri_clk_data bsc1_data = {
 	.trig		= TRIGGER(0x0afc, 23),
 };
 
-static struct peri_clk_data bsc2_data = {
+static struct clk_reg_data bsc2_data = {
 	.gate		= HW_SW_GATE(0x045c, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_104m",
@@ -273,7 +273,7 @@ static struct peri_clk_data bsc2_data = {
 	.trig		= TRIGGER(0x0afc, 24),
 };
 
-static struct peri_clk_data bsc3_data = {
+static struct clk_reg_data bsc3_data = {
 	.gate		= HW_SW_GATE(0x0470, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_104m",
@@ -284,7 +284,7 @@ static struct peri_clk_data bsc3_data = {
 	.trig		= TRIGGER(0x0afc, 18),
 };
 
-static struct peri_clk_data bsc4_data = {
+static struct clk_reg_data bsc4_data = {
 	.gate		= HW_SW_GATE(0x0474, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_104m",

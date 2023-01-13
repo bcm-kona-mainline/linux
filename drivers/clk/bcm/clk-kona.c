@@ -1035,7 +1035,7 @@ static void kona_ccu_set_freq_policy(struct ccu_data *ccu, u8 freq_policy_reg_nu
 static int kona_peri_clk_enable(struct clk_hw *hw)
 {
 	struct kona_clk *bcm_clk = to_kona_clk(hw);
-	struct bcm_clk_gate *gate = &bcm_clk->u.peri->gate;
+	struct bcm_clk_gate *gate = &bcm_clk->u.reg_data->gate;
 
 	return clk_gate(bcm_clk->ccu, bcm_clk->init_data.name, gate, true);
 }
@@ -1043,7 +1043,7 @@ static int kona_peri_clk_enable(struct clk_hw *hw)
 static void kona_peri_clk_disable(struct clk_hw *hw)
 {
 	struct kona_clk *bcm_clk = to_kona_clk(hw);
-	struct bcm_clk_gate *gate = &bcm_clk->u.peri->gate;
+	struct bcm_clk_gate *gate = &bcm_clk->u.reg_data->gate;
 
 	(void)clk_gate(bcm_clk->ccu, bcm_clk->init_data.name, gate, false);
 }
@@ -1051,7 +1051,7 @@ static void kona_peri_clk_disable(struct clk_hw *hw)
 static int kona_peri_clk_is_enabled(struct clk_hw *hw)
 {
 	struct kona_clk *bcm_clk = to_kona_clk(hw);
-	struct bcm_clk_gate *gate = &bcm_clk->u.peri->gate;
+	struct bcm_clk_gate *gate = &bcm_clk->u.reg_data->gate;
 
 	return is_clk_gate_enabled(bcm_clk->ccu, gate) ? 1 : 0;
 }
@@ -1060,7 +1060,7 @@ static unsigned long kona_peri_clk_recalc_rate(struct clk_hw *hw,
 			unsigned long parent_rate)
 {
 	struct kona_clk *bcm_clk = to_kona_clk(hw);
-	struct peri_clk_data *data = bcm_clk->u.peri;
+	struct clk_reg_data *data = bcm_clk->u.reg_data;
 
 	return clk_recalc_rate(bcm_clk->ccu, &data->div, &data->pre_div,
 				parent_rate);
@@ -1070,13 +1070,13 @@ static long kona_peri_clk_round_rate(struct clk_hw *hw, unsigned long rate,
 			unsigned long *parent_rate)
 {
 	struct kona_clk *bcm_clk = to_kona_clk(hw);
-	struct bcm_clk_div *div = &bcm_clk->u.peri->div;
+	struct bcm_clk_div *div = &bcm_clk->u.reg_data->div;
 
 	if (!divider_exists(div))
 		return clk_hw_get_rate(hw);
 
 	/* Quietly avoid a zero rate */
-	return round_rate(bcm_clk->ccu, div, &bcm_clk->u.peri->pre_div,
+	return round_rate(bcm_clk->ccu, div, &bcm_clk->u.reg_data->pre_div,
 				rate ? rate : 1, *parent_rate, NULL);
 }
 
@@ -1144,7 +1144,7 @@ static int kona_peri_clk_determine_rate(struct clk_hw *hw,
 static int kona_peri_clk_set_parent(struct clk_hw *hw, u8 index)
 {
 	struct kona_clk *bcm_clk = to_kona_clk(hw);
-	struct peri_clk_data *data = bcm_clk->u.peri;
+	struct clk_reg_data *data = bcm_clk->u.reg_data;
 	struct bcm_clk_sel *sel = &data->sel;
 	struct bcm_clk_trig *trig;
 	int ret;
@@ -1179,7 +1179,7 @@ static int kona_peri_clk_set_parent(struct clk_hw *hw, u8 index)
 static u8 kona_peri_clk_get_parent(struct clk_hw *hw)
 {
 	struct kona_clk *bcm_clk = to_kona_clk(hw);
-	struct peri_clk_data *data = bcm_clk->u.peri;
+	struct clk_reg_data *data = bcm_clk->u.reg_data;
 	u8 index;
 
 	index = selector_read_index(bcm_clk->ccu, &data->sel);
@@ -1192,7 +1192,7 @@ static int kona_peri_clk_set_rate(struct clk_hw *hw, unsigned long rate,
 			unsigned long parent_rate)
 {
 	struct kona_clk *bcm_clk = to_kona_clk(hw);
-	struct peri_clk_data *data = bcm_clk->u.peri;
+	struct clk_reg_data *data = bcm_clk->u.reg_data;
 	struct bcm_clk_div *div = &data->div;
 	u64 scaled_div = 0;
 	int ret;
@@ -1255,7 +1255,7 @@ struct clk_ops kona_peri_clk_ops = {
 static bool __peri_clk_init(struct kona_clk *bcm_clk)
 {
 	struct ccu_data *ccu = bcm_clk->ccu;
-	struct peri_clk_data *peri = bcm_clk->u.peri;
+	struct clk_reg_data *peri = bcm_clk->u.reg_data;
 	const char *name = bcm_clk->init_data.name;
 	struct bcm_clk_trig *trig;
 
