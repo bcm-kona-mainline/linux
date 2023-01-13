@@ -39,7 +39,12 @@ static struct clk_reg_data hub_timer_data = {
 	.trig		= TRIGGER(0x0a40, 4),
 };
 
-static struct clk_reg_data pmu_data = {
+static struct clk_reg_data pmu_bsc_apb_data = {
+	.gate		= HW_SW_GATE(0x0418, 18, 2, 3),
+	.hyst		= HYST(0x0418, 10, 11),
+};
+
+static struct clk_reg_data pmu_bsc_data = {
 	.gate		= HW_SW_GATE(0x0418, 16, 0, 1),
 	.hyst		= HYST(0x0418, 8, 9),
 	.clocks		= CLOCKS("ref_crystal",
@@ -86,13 +91,31 @@ static struct ccu_data aon_ccu_data = {
 	.kona_clks	= {
 		[BCM21664_AON_CCU_HUB_TIMER] =
 			KONA_CLK(aon, hub_timer, peri),
-		[BCM21664_AON_CCU_PMU] =
-			KONA_CLK(aon, pmu, peri),
+		[BCM21664_AON_CCU_PMU_BSC_APB] =
+			KONA_CLK(aon, pmu_bsc_apb, bus),
+		[BCM21664_AON_CCU_PMU_BSC] =
+			KONA_CLK(aon, pmu_bsc, peri),
 		[BCM21664_AON_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
 	},
 };
 
 /* Master CCU */
+
+static struct clk_reg_data sdio1_ahb_data = {
+	.gate		= HW_SW_GATE(0x0358, 16, 0, 1),
+};
+
+static struct clk_reg_data sdio2_ahb_data = {
+	.gate		= HW_SW_GATE(0x035c, 16, 0, 1),
+};
+
+static struct clk_reg_data sdio3_ahb_data = {
+	.gate		= HW_SW_GATE(0x0364, 16, 0, 1),
+};
+
+static struct clk_reg_data sdio4_ahb_data = {
+	.gate		= HW_SW_GATE(0x0360, 16, 0, 1),
+};
 
 static struct clk_reg_data sdio1_data = {
 	.gate		= HW_SW_GATE(0x0358, 18, 2, 3),
@@ -162,6 +185,10 @@ static struct clk_reg_data sdio4_sleep_data = {
 	.gate		= HW_SW_GATE(0x0360, 18, 2, 3),
 };
 
+static struct clk_reg_data usb_otg_ahb_data = {
+	.gate		= HW_SW_GATE(0x0348, 16, 0, 1),
+};
+
 static struct ccu_data master_ccu_data = {
 	BCM21664_CCU_COMMON(master, MASTER),
 	.policy		= {
@@ -194,11 +221,19 @@ static struct ccu_data master_ccu_data = {
 	.freq_policy	= {
 		.offset = 0x0008,
 		.freq_policy_table = {
-			2, 2, 3, 3 /* ECO, ECO, NORMAL, NORMAL */
+			1, 1, 3, 3 /* ECO, ECO, NORMAL, NORMAL */
 		},
 		.freq_policy_table_len = 4,
 	},
 	.kona_clks	= {
+		[BCM21664_MASTER_CCU_SDIO1_AHB] =
+			KONA_CLK(master, sdio1_ahb, bus),
+		[BCM21664_MASTER_CCU_SDIO2_AHB] =
+			KONA_CLK(master, sdio2_ahb, bus),
+		[BCM21664_MASTER_CCU_SDIO3_AHB] =
+			KONA_CLK(master, sdio3_ahb, bus),
+		[BCM21664_MASTER_CCU_SDIO4_AHB] =
+			KONA_CLK(master, sdio4_ahb, bus),
 		[BCM21664_MASTER_CCU_SDIO1] =
 			KONA_CLK(master, sdio1, peri),
 		[BCM21664_MASTER_CCU_SDIO2] =
@@ -215,11 +250,25 @@ static struct ccu_data master_ccu_data = {
 			KONA_CLK(master, sdio3_sleep, peri),
 		[BCM21664_MASTER_CCU_SDIO4_SLEEP] =
 			KONA_CLK(master, sdio4_sleep, peri),
+		[BCM21664_MASTER_CCU_USB_OTG_AHB] =
+			KONA_CLK(master, usb_otg_ahb, bus),
 		[BCM21664_MASTER_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
 	},
 };
 
 /* Slave CCU */
+
+static struct clk_reg_data uartb_apb_data = {
+	.gate		= HW_SW_GATE_AUTO(0x0400, 16, 0, 1),
+};
+
+static struct clk_reg_data uartb2_apb_data = {
+	.gate		= HW_SW_GATE_AUTO(0x0404, 16, 0, 1),
+};
+
+static struct clk_reg_data uartb3_apb_data = {
+	.gate		= HW_SW_GATE_AUTO(0x0408, 16, 0, 1),
+};
 
 static struct clk_reg_data uartb_data = {
 	.gate		= HW_SW_GATE(0x0400, 18, 2, 3),
@@ -249,6 +298,22 @@ static struct clk_reg_data uartb3_data = {
 	.sel		= SELECTOR(0x0a18, 0, 2),
 	.div		= FRAC_DIVIDER(0x0a18, 4, 12, 8),
 	.trig		= TRIGGER(0x0afc, 4),
+};
+
+static struct clk_reg_data bsc1_apb_data = {
+	.gate = HW_SW_GATE_AUTO(0x0458, 16, 0, 1),
+};
+
+static struct clk_reg_data bsc2_apb_data = {
+	.gate = HW_SW_GATE_AUTO(0x045c, 16, 0, 1),
+};
+
+static struct clk_reg_data bsc3_apb_data = {
+	.gate = HW_SW_GATE_AUTO(0x0470, 16, 0, 1),
+};
+
+static struct clk_reg_data bsc4_apb_data = {
+	.gate = HW_SW_GATE_AUTO(0x0474, 16, 0, 1),
 };
 
 static struct clk_reg_data bsc1_data = {
@@ -330,12 +395,26 @@ static struct ccu_data slave_ccu_data = {
 		.freq_policy_table_len = 4,
 	},
 	.kona_clks	= {
+		[BCM21664_SLAVE_CCU_UARTB_APB] =
+			KONA_CLK(slave, uartb_apb, bus),
+		[BCM21664_SLAVE_CCU_UARTB2_APB] =
+			KONA_CLK(slave, uartb2_apb, bus),
+		[BCM21664_SLAVE_CCU_UARTB3_APB] =
+			KONA_CLK(slave, uartb3_apb, bus),
 		[BCM21664_SLAVE_CCU_UARTB] =
 			KONA_CLK(slave, uartb, peri),
 		[BCM21664_SLAVE_CCU_UARTB2] =
 			KONA_CLK(slave, uartb2, peri),
 		[BCM21664_SLAVE_CCU_UARTB3] =
 			KONA_CLK(slave, uartb3, peri),
+		[BCM21664_SLAVE_CCU_BSC1_APB] =
+			KONA_CLK(slave, bsc1_apb, bus),
+		[BCM21664_SLAVE_CCU_BSC2_APB] =
+			KONA_CLK(slave, bsc2_apb, bus),
+		[BCM21664_SLAVE_CCU_BSC3_APB] =
+			KONA_CLK(slave, bsc3_apb, bus),
+		[BCM21664_SLAVE_CCU_BSC4_APB] =
+			KONA_CLK(slave, bsc4_apb, bus),
 		[BCM21664_SLAVE_CCU_BSC1] =
 			KONA_CLK(slave, bsc1, peri),
 		[BCM21664_SLAVE_CCU_BSC2] =

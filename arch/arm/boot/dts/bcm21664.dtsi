@@ -105,7 +105,7 @@
 		interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
 		#address-cells = <1>;
 		#size-cells = <0>;
-		clocks = <&aon_ccu BCM21664_AON_CCU_PMU>;
+		clocks = <&aon_ccu BCM21664_AON_CCU_PMU_BSC>;
 		status = "disabled";
 	};
 
@@ -253,12 +253,6 @@
 			clock-frequency = <52000000>;
 		};
 
-		usb_otg_ahb_clk: usb_otg_ahb {
-			#clock-cells = <0>;
-			compatible = "fixed-clock";
-			clock-frequency = <52000000>;
-		};
-
 		ref_96m_clk: ref_96m {
 			#clock-cells = <0>;
 			compatible = "fixed-clock";
@@ -313,30 +307,43 @@
 			reg = <0x35002000 0x0f00>;
 			#clock-cells = <1>;
 			clock-output-names = "hub_timer",
-					     "pmu";
+					     "pmu_bsc_apb",
+					     "pmu_bsc";
 		};
 
 		master_ccu: master_ccu@3f001000 {
 			compatible = BCM21664_DT_MASTER_CCU_COMPAT;
 			reg = <0x3f001000 0x0f00>;
 			#clock-cells = <1>;
-			clock-output-names = "sdio1",
+			clock-output-names = "sdio1_ahb",
+					     "sdio2_ahb",
+					     "sdio3_ahb",
+					     "sdio4_ahb",
+					     "sdio1",
 					     "sdio2",
 					     "sdio3",
 					     "sdio4",
 					     "sdio1_sleep",
 					     "sdio2_sleep",
 					     "sdio3_sleep",
-					     "sdio4_sleep";
+					     "sdio4_sleep",
+					     "usb_otg_ahb";
 		};
 
 		slave_ccu: slave_ccu@3e011000 {
 			compatible = BCM21664_DT_SLAVE_CCU_COMPAT;
 			reg = <0x3e011000 0x0f00>;
 			#clock-cells = <1>;
-			clock-output-names = "uartb",
+			clock-output-names = "uartb_apb",
+					     "uartb2_apb",
+					     "uartb3_apb",
+					     "uartb",
 					     "uartb2",
 					     "uartb3",
+					     "bsc1_apb",
+					     "bsc2_apb",
+					     "bsc3_apb",
+					     "bsc4_apb",
 					     "bsc1",
 					     "bsc2",
 					     "bsc3",
@@ -348,7 +355,7 @@
 		compatible = "snps,dwc2";
 		reg = <0x3f120000 0x10000>;
 		interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
-		clocks = <&usb_otg_ahb_clk>;
+		clocks = <&master_ccu BCM21664_MASTER_CCU_USB_OTG_AHB>;
 		clock-names = "otg";
 		phys = <&usbphy>;
 		phy-names = "usb2-phy";
