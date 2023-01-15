@@ -12,8 +12,8 @@
 	compatible = "brcm,bcm23550-baffinlite", "brcm,bcm23550", "samsung,baffinlite";
 
 	chosen {
-		stdout-path = "/slaves@3e000000/serial@1:115200n8";
-		bootargs = "console=ttyS1,115200n8 mem=994M ignore_loglevel PMOS_NO_OUTPUT_REDIRECT nosmp panic=5"; /* TODO: fix smp so we can reenable it */
+		stdout-path = "/slaves@3e000000/serial@2:115200n8";
+		bootargs = "console=ttyS2,115200n8 mem=994M ignore_loglevel PMOS_NO_OUTPUT_REDIRECT nosmp panic=5"; /* TODO: fix smp so we can reenable it */
 	};
 
 	memory@80000000 {
@@ -68,16 +68,15 @@
 	 *       regular Samsung logo screen. Probably would be worth it to
 	 *       dump and analyze the related memory address.
 	 */
-	/*
-	framebuffer@3c200000 {
+	framebuffer@9e980000 {
 		compatible = "simple-framebuffer";
-		reg = <0x3c200000 0x1000>;
+		reg = <0x9e980000 0x1000>;
 		width = <480>;
 		height = <800>;
 		stride = <(480 * 5)>;
 		format = "b8g8r8a8";
+		status = "okay";
 	};
-	*/
 };
 
 &uartb {
@@ -95,13 +94,10 @@
 &usbotg {
 	vusb_d-supply = <&usbldo_reg>;
 	vusb_a-supply = <&iosr1_reg>;
-	dr_mode = "host";
-	snps,reset-phy-on-wake;
 	status = "okay";
 };
 
 &usbphy {
-	brcm,clear-bit-15;
 	status = "okay";
 };
 
@@ -134,10 +130,9 @@
 /* SD card */
 &sdio1 {
 	max-frequency = <48000000>;
-	cd-gpio = <&gpio 91 0>;
+	cd-gpio = <&gpio 91 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 	status = "okay";
 };
-
 
 /* Internal storage */
 &sdio2 {
