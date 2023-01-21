@@ -99,6 +99,7 @@ enum bcm_kona_cmd_t {
 
 enum bus_speed_index {
 	BCM_SPD_100K = 0,
+	BCM_SPD_230K,
 	BCM_SPD_400K,
 	BCM_SPD_1MHZ,
 };
@@ -133,6 +134,7 @@ struct hs_bus_speed_cfg {
 
 static const struct bus_speed_cfg std_cfg_table[] = {
 	[BCM_SPD_100K] = {0x01, 0x01, 0x03, 0x06, 0x00, 0x02},
+	[BCM_SPD_230K] = {0x07, 0x00, 0x03, 0x00, 0x00, 0x03},
 	[BCM_SPD_400K] = {0x05, 0x01, 0x03, 0x05, 0x01, 0x02},
 	[BCM_SPD_1MHZ] = {0x01, 0x01, 0x03, 0x01, 0x01, 0x03},
 };
@@ -715,6 +717,9 @@ static int bcm_kona_i2c_assign_bus_speed(struct bcm_kona_i2c_dev *dev)
 	case I2C_MAX_STANDARD_MODE_FREQ:
 		dev->std_cfg = &std_cfg_table[BCM_SPD_100K];
 		break;
+	case 230000: /* Non-standard speed */
+		dev->std_cfg = &std_cfg_table[BCM_SPD_230K];
+		break;
 	case I2C_MAX_FAST_MODE_FREQ:
 		dev->std_cfg = &std_cfg_table[BCM_SPD_400K];
 		break;
@@ -728,7 +733,7 @@ static int bcm_kona_i2c_assign_bus_speed(struct bcm_kona_i2c_dev *dev)
 		break;
 	default:
 		pr_err("%d hz bus speed not supported\n", bus_speed);
-		pr_err("Valid speeds are 100khz, 400khz, 1mhz, and 3.4mhz\n");
+		pr_err("Valid speeds are 100khz, 230khz, 400khz, 1mhz, and 3.4mhz\n");
 		return -EINVAL;
 	}
 
