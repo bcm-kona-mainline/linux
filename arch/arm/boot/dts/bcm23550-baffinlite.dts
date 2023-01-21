@@ -21,6 +21,17 @@
 		reg = <0x80000000 0x3E200000>;
 	};
 
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		simplefb: framebuffer@9e980000 {
+			reg = <0x9e980000 (480 * 800 * 4)>;
+			no-map;
+		};
+	};
+
 	/* Buttons */
 	gpio-keys {
 		compatible = "gpio-keys";
@@ -61,21 +72,23 @@
 		};
 	};
 
-	/* TODO: Framebuffer. This seems to be the correct address, because
-	 *       if you leave it on with the format set to a8b8g8r it fades
-	 *       into black, but with the "correct" setting (as per recovery
-	 *       pixel format in downstream BoardConfig) it stays on the
-	 *       regular Samsung logo screen. Probably would be worth it to
-	 *       dump and analyze the related memory address.
-	 */
 	framebuffer@9e980000 {
 		compatible = "simple-framebuffer";
-		reg = <0x9e980000 0x1000>;
+		reg = <0x9e980000 (480 * 800 * 4)>;
 		width = <480>;
 		height = <800>;
-		stride = <(480 * 5)>;
-		format = "b8g8r8a8";
+		stride = <(480 * 4)>;
+		format = "a8r8g8b8";
 		status = "okay";
+	};
+
+	tsp_avdd_3v3_reg: tsp_avdd_3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "TSP_AVDD_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio 0 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
 	};
 };
 
@@ -105,17 +118,34 @@
 	clock-frequency = <400000>;
 	status = "okay";
 };
+
 &bsc2 {
 	clock-frequency = <400000>;
 	status = "okay";
 };
+
 &bsc3 {
 	clock-frequency = <400000>;
 	status = "okay";
 };
+
 &bsc4 {
-	clock-frequency = <400000>;
+	clock-frequency = <230000>;
 	status = "okay";
+
+	/* Melfas MMS144 touchscreen, using the mms136 compatible for now */
+	touchscreen@48 {
+		compatible = "melfas,mms136";
+		reg = <0x48>;
+		interrupt-parent = <&gpio>;
+		interrupts = <73 IRQ_TYPE_EDGE_FALLING>;
+		/* AVDD is "analog supply", 2.57-3.47 V */
+		avdd-supply = <&gpldo2_reg>; /* ??? this should be a fixed regulator but it keeps throwing a -517 (EPROBE_DEFER) if i set it to one. how do you even get a probe defer on an always-on fixed regulator??? */
+		/* VDD is "digital supply" 1.71-3.47V */
+		vdd-supply = <&gpldo2_reg>;
+		touchscreen-size-x = <480>;
+		touchscreen-size-y = <800>;
+	};
 };
 
 &pmu_bsc {
@@ -157,6 +187,10 @@
 	status = "okay";
 };
 */
+
+&dma {
+	status = "okay";
+};
 
 #include "bcm59054.dtsi"
 
