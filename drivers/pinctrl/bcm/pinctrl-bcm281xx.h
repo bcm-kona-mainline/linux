@@ -1,0 +1,1428 @@
+// SPDX-License-Identifier: GPL-2.0-only
+#ifndef __PINCTRL_BCM281XX_H__
+#define __PINCTRL_BCM281XX_H__
+/*
+ * bcm281xx_pin_type - types of pin register
+ */
+enum bcm281xx_pin_type {
+	BCM281XX_PIN_TYPE_UNKNOWN = 0,
+	BCM281XX_PIN_TYPE_STD,
+	BCM281XX_PIN_TYPE_I2C,
+	BCM281XX_PIN_TYPE_HDMI,
+};
+
+static enum bcm281xx_pin_type std_pin = BCM281XX_PIN_TYPE_STD;
+static enum bcm281xx_pin_type i2c_pin = BCM281XX_PIN_TYPE_I2C;
+static enum bcm281xx_pin_type hdmi_pin = BCM281XX_PIN_TYPE_HDMI;
+
+/*
+ * bcm281xx_pin_function- define pin function
+ */
+struct bcm281xx_pin_function {
+	const char *name;
+	const char * const *groups;
+	const unsigned ngroups;
+};
+
+/*
+ * bcm281xx_pinctrl_data - Broadcom-specific pinctrl data
+ * @reg_base - base of pinctrl registers
+ */
+struct bcm281xx_pinctrl_data {
+	void __iomem *reg_base;
+
+	/* Pointer to device-specific data struct */
+	const struct bcm281xx_pinctrl_drv_data *drv_data;
+
+	struct regmap *regmap;
+};
+
+/*
+ * Device types (used in bcm281xx_pinctrl_drv_data to differentiate
+ * the two device types from each other)
+ */
+#define BCM281XX_PINCTRL_TYPE	0
+#define BCM21664_PINCTRL_TYPE	1
+
+/* bcm281xx_pinctrl_drv_data - Model-specific pinctrl data */
+struct bcm281xx_pinctrl_drv_data {
+	int device_type;
+
+	/* List of all pins */
+	const struct pinctrl_pin_desc *pins;
+	const unsigned npins;
+
+	const struct bcm281xx_pin_function *functions;
+	const unsigned nfunctions;
+
+	struct regmap_config regmap_config;
+};
+
+#define BCM281XX_PIN_DESC(a, b, c) \
+	{ .number = a, .name = b, .drv_data = &c##_pin }
+
+/* BCM281XX data */
+
+/*
+ * Pin number definition.  The order here must be the same as defined in the
+ * PADCTRLREG block in the RDB.
+ */
+#define BCM281XX_PIN_ADCSYNC		0
+#define BCM281XX_PIN_BAT_RM		1
+#define BCM281XX_PIN_BSC1_SCL		2
+#define BCM281XX_PIN_BSC1_SDA		3
+#define BCM281XX_PIN_BSC2_SCL		4
+#define BCM281XX_PIN_BSC2_SDA		5
+#define BCM281XX_PIN_CLASSGPWR		6
+#define BCM281XX_PIN_CLK_CX8		7
+#define BCM281XX_PIN_CLKOUT_0		8
+#define BCM281XX_PIN_CLKOUT_1		9
+#define BCM281XX_PIN_CLKOUT_2		10
+#define BCM281XX_PIN_CLKOUT_3		11
+#define BCM281XX_PIN_CLKREQ_IN_0	12
+#define BCM281XX_PIN_CLKREQ_IN_1	13
+#define BCM281XX_PIN_CWS_SYS_REQ1	14
+#define BCM281XX_PIN_CWS_SYS_REQ2	15
+#define BCM281XX_PIN_CWS_SYS_REQ3	16
+#define BCM281XX_PIN_DIGMIC1_CLK	17
+#define BCM281XX_PIN_DIGMIC1_DQ		18
+#define BCM281XX_PIN_DIGMIC2_CLK	19
+#define BCM281XX_PIN_DIGMIC2_DQ		20
+#define BCM281XX_PIN_GPEN13		21
+#define BCM281XX_PIN_GPEN14		22
+#define BCM281XX_PIN_GPEN15		23
+#define BCM281XX_PIN_GPIO00		24
+#define BCM281XX_PIN_GPIO01		25
+#define BCM281XX_PIN_GPIO02		26
+#define BCM281XX_PIN_GPIO03		27
+#define BCM281XX_PIN_GPIO04		28
+#define BCM281XX_PIN_GPIO05		29
+#define BCM281XX_PIN_GPIO06		30
+#define BCM281XX_PIN_GPIO07		31
+#define BCM281XX_PIN_GPIO08		32
+#define BCM281XX_PIN_GPIO09		33
+#define BCM281XX_PIN_GPIO10		34
+#define BCM281XX_PIN_GPIO11		35
+#define BCM281XX_PIN_GPIO12		36
+#define BCM281XX_PIN_GPIO13		37
+#define BCM281XX_PIN_GPIO14		38
+#define BCM281XX_PIN_GPS_PABLANK	39
+#define BCM281XX_PIN_GPS_TMARK		40
+#define BCM281XX_PIN_HDMI_SCL		41
+#define BCM281XX_PIN_HDMI_SDA		42
+#define BCM281XX_PIN_IC_DM		43
+#define BCM281XX_PIN_IC_DP		44
+#define BCM281XX_PIN_KP_COL_IP_0	45
+#define BCM281XX_PIN_KP_COL_IP_1	46
+#define BCM281XX_PIN_KP_COL_IP_2	47
+#define BCM281XX_PIN_KP_COL_IP_3	48
+#define BCM281XX_PIN_KP_ROW_OP_0	49
+#define BCM281XX_PIN_KP_ROW_OP_1	50
+#define BCM281XX_PIN_KP_ROW_OP_2	51
+#define BCM281XX_PIN_KP_ROW_OP_3	52
+#define BCM281XX_PIN_LCD_B_0		53
+#define BCM281XX_PIN_LCD_B_1		54
+#define BCM281XX_PIN_LCD_B_2		55
+#define BCM281XX_PIN_LCD_B_3		56
+#define BCM281XX_PIN_LCD_B_4		57
+#define BCM281XX_PIN_LCD_B_5		58
+#define BCM281XX_PIN_LCD_B_6		59
+#define BCM281XX_PIN_LCD_B_7		60
+#define BCM281XX_PIN_LCD_G_0		61
+#define BCM281XX_PIN_LCD_G_1		62
+#define BCM281XX_PIN_LCD_G_2		63
+#define BCM281XX_PIN_LCD_G_3		64
+#define BCM281XX_PIN_LCD_G_4		65
+#define BCM281XX_PIN_LCD_G_5		66
+#define BCM281XX_PIN_LCD_G_6		67
+#define BCM281XX_PIN_LCD_G_7		68
+#define BCM281XX_PIN_LCD_HSYNC		69
+#define BCM281XX_PIN_LCD_OE		70
+#define BCM281XX_PIN_LCD_PCLK		71
+#define BCM281XX_PIN_LCD_R_0		72
+#define BCM281XX_PIN_LCD_R_1		73
+#define BCM281XX_PIN_LCD_R_2		74
+#define BCM281XX_PIN_LCD_R_3		75
+#define BCM281XX_PIN_LCD_R_4		76
+#define BCM281XX_PIN_LCD_R_5		77
+#define BCM281XX_PIN_LCD_R_6		78
+#define BCM281XX_PIN_LCD_R_7		79
+#define BCM281XX_PIN_LCD_VSYNC		80
+#define BCM281XX_PIN_MDMGPIO0		81
+#define BCM281XX_PIN_MDMGPIO1		82
+#define BCM281XX_PIN_MDMGPIO2		83
+#define BCM281XX_PIN_MDMGPIO3		84
+#define BCM281XX_PIN_MDMGPIO4		85
+#define BCM281XX_PIN_MDMGPIO5		86
+#define BCM281XX_PIN_MDMGPIO6		87
+#define BCM281XX_PIN_MDMGPIO7		88
+#define BCM281XX_PIN_MDMGPIO8		89
+#define BCM281XX_PIN_MPHI_DATA_0	90
+#define BCM281XX_PIN_MPHI_DATA_1	91
+#define BCM281XX_PIN_MPHI_DATA_2	92
+#define BCM281XX_PIN_MPHI_DATA_3	93
+#define BCM281XX_PIN_MPHI_DATA_4	94
+#define BCM281XX_PIN_MPHI_DATA_5	95
+#define BCM281XX_PIN_MPHI_DATA_6	96
+#define BCM281XX_PIN_MPHI_DATA_7	97
+#define BCM281XX_PIN_MPHI_DATA_8	98
+#define BCM281XX_PIN_MPHI_DATA_9	99
+#define BCM281XX_PIN_MPHI_DATA_10	100
+#define BCM281XX_PIN_MPHI_DATA_11	101
+#define BCM281XX_PIN_MPHI_DATA_12	102
+#define BCM281XX_PIN_MPHI_DATA_13	103
+#define BCM281XX_PIN_MPHI_DATA_14	104
+#define BCM281XX_PIN_MPHI_DATA_15	105
+#define BCM281XX_PIN_MPHI_HA0		106
+#define BCM281XX_PIN_MPHI_HAT0		107
+#define BCM281XX_PIN_MPHI_HAT1		108
+#define BCM281XX_PIN_MPHI_HCE0_N	109
+#define BCM281XX_PIN_MPHI_HCE1_N	110
+#define BCM281XX_PIN_MPHI_HRD_N		111
+#define BCM281XX_PIN_MPHI_HWR_N		112
+#define BCM281XX_PIN_MPHI_RUN0		113
+#define BCM281XX_PIN_MPHI_RUN1		114
+#define BCM281XX_PIN_MTX_SCAN_CLK	115
+#define BCM281XX_PIN_MTX_SCAN_DATA	116
+#define BCM281XX_PIN_NAND_AD_0		117
+#define BCM281XX_PIN_NAND_AD_1		118
+#define BCM281XX_PIN_NAND_AD_2		119
+#define BCM281XX_PIN_NAND_AD_3		120
+#define BCM281XX_PIN_NAND_AD_4		121
+#define BCM281XX_PIN_NAND_AD_5		122
+#define BCM281XX_PIN_NAND_AD_6		123
+#define BCM281XX_PIN_NAND_AD_7		124
+#define BCM281XX_PIN_NAND_ALE		125
+#define BCM281XX_PIN_NAND_CEN_0		126
+#define BCM281XX_PIN_NAND_CEN_1		127
+#define BCM281XX_PIN_NAND_CLE		128
+#define BCM281XX_PIN_NAND_OEN		129
+#define BCM281XX_PIN_NAND_RDY_0		130
+#define BCM281XX_PIN_NAND_RDY_1		131
+#define BCM281XX_PIN_NAND_WEN		132
+#define BCM281XX_PIN_NAND_WP		133
+#define BCM281XX_PIN_PC1		134
+#define BCM281XX_PIN_PC2		135
+#define BCM281XX_PIN_PMU_INT		136
+#define BCM281XX_PIN_PMU_SCL		137
+#define BCM281XX_PIN_PMU_SDA		138
+#define BCM281XX_PIN_RFST2G_MTSLOTEN3G	139
+#define BCM281XX_PIN_RGMII_0_RX_CTL	140
+#define BCM281XX_PIN_RGMII_0_RXC	141
+#define BCM281XX_PIN_RGMII_0_RXD_0	142
+#define BCM281XX_PIN_RGMII_0_RXD_1	143
+#define BCM281XX_PIN_RGMII_0_RXD_2	144
+#define BCM281XX_PIN_RGMII_0_RXD_3	145
+#define BCM281XX_PIN_RGMII_0_TX_CTL	146
+#define BCM281XX_PIN_RGMII_0_TXC	147
+#define BCM281XX_PIN_RGMII_0_TXD_0	148
+#define BCM281XX_PIN_RGMII_0_TXD_1	149
+#define BCM281XX_PIN_RGMII_0_TXD_2	150
+#define BCM281XX_PIN_RGMII_0_TXD_3	151
+#define BCM281XX_PIN_RGMII_1_RX_CTL	152
+#define BCM281XX_PIN_RGMII_1_RXC	153
+#define BCM281XX_PIN_RGMII_1_RXD_0	154
+#define BCM281XX_PIN_RGMII_1_RXD_1	155
+#define BCM281XX_PIN_RGMII_1_RXD_2	156
+#define BCM281XX_PIN_RGMII_1_RXD_3	157
+#define BCM281XX_PIN_RGMII_1_TX_CTL	158
+#define BCM281XX_PIN_RGMII_1_TXC	159
+#define BCM281XX_PIN_RGMII_1_TXD_0	160
+#define BCM281XX_PIN_RGMII_1_TXD_1	161
+#define BCM281XX_PIN_RGMII_1_TXD_2	162
+#define BCM281XX_PIN_RGMII_1_TXD_3	163
+#define BCM281XX_PIN_RGMII_GPIO_0	164
+#define BCM281XX_PIN_RGMII_GPIO_1	165
+#define BCM281XX_PIN_RGMII_GPIO_2	166
+#define BCM281XX_PIN_RGMII_GPIO_3	167
+#define BCM281XX_PIN_RTXDATA2G_TXDATA3G1	168
+#define BCM281XX_PIN_RTXEN2G_TXDATA3G2	169
+#define BCM281XX_PIN_RXDATA3G0		170
+#define BCM281XX_PIN_RXDATA3G1		171
+#define BCM281XX_PIN_RXDATA3G2		172
+#define BCM281XX_PIN_SDIO1_CLK		173
+#define BCM281XX_PIN_SDIO1_CMD		174
+#define BCM281XX_PIN_SDIO1_DATA_0	175
+#define BCM281XX_PIN_SDIO1_DATA_1	176
+#define BCM281XX_PIN_SDIO1_DATA_2	177
+#define BCM281XX_PIN_SDIO1_DATA_3	178
+#define BCM281XX_PIN_SDIO4_CLK		179
+#define BCM281XX_PIN_SDIO4_CMD		180
+#define BCM281XX_PIN_SDIO4_DATA_0	181
+#define BCM281XX_PIN_SDIO4_DATA_1	182
+#define BCM281XX_PIN_SDIO4_DATA_2	183
+#define BCM281XX_PIN_SDIO4_DATA_3	184
+#define BCM281XX_PIN_SIM_CLK		185
+#define BCM281XX_PIN_SIM_DATA		186
+#define BCM281XX_PIN_SIM_DET		187
+#define BCM281XX_PIN_SIM_RESETN		188
+#define BCM281XX_PIN_SIM2_CLK		189
+#define BCM281XX_PIN_SIM2_DATA		190
+#define BCM281XX_PIN_SIM2_DET		191
+#define BCM281XX_PIN_SIM2_RESETN	192
+#define BCM281XX_PIN_SRI_C		193
+#define BCM281XX_PIN_SRI_D		194
+#define BCM281XX_PIN_SRI_E		195
+#define BCM281XX_PIN_SSP_EXTCLK		196
+#define BCM281XX_PIN_SSP0_CLK		197
+#define BCM281XX_PIN_SSP0_FS		198
+#define BCM281XX_PIN_SSP0_RXD		199
+#define BCM281XX_PIN_SSP0_TXD		200
+#define BCM281XX_PIN_SSP2_CLK		201
+#define BCM281XX_PIN_SSP2_FS_0		202
+#define BCM281XX_PIN_SSP2_FS_1		203
+#define BCM281XX_PIN_SSP2_FS_2		204
+#define BCM281XX_PIN_SSP2_FS_3		205
+#define BCM281XX_PIN_SSP2_RXD_0		206
+#define BCM281XX_PIN_SSP2_RXD_1		207
+#define BCM281XX_PIN_SSP2_TXD_0		208
+#define BCM281XX_PIN_SSP2_TXD_1		209
+#define BCM281XX_PIN_SSP3_CLK		210
+#define BCM281XX_PIN_SSP3_FS		211
+#define BCM281XX_PIN_SSP3_RXD		212
+#define BCM281XX_PIN_SSP3_TXD		213
+#define BCM281XX_PIN_SSP4_CLK		214
+#define BCM281XX_PIN_SSP4_FS		215
+#define BCM281XX_PIN_SSP4_RXD		216
+#define BCM281XX_PIN_SSP4_TXD		217
+#define BCM281XX_PIN_SSP5_CLK		218
+#define BCM281XX_PIN_SSP5_FS		219
+#define BCM281XX_PIN_SSP5_RXD		220
+#define BCM281XX_PIN_SSP5_TXD		221
+#define BCM281XX_PIN_SSP6_CLK		222
+#define BCM281XX_PIN_SSP6_FS		223
+#define BCM281XX_PIN_SSP6_RXD		224
+#define BCM281XX_PIN_SSP6_TXD		225
+#define BCM281XX_PIN_STAT_1		226
+#define BCM281XX_PIN_STAT_2		227
+#define BCM281XX_PIN_SYSCLKEN		228
+#define BCM281XX_PIN_TRACECLK		229
+#define BCM281XX_PIN_TRACEDT00		230
+#define BCM281XX_PIN_TRACEDT01		231
+#define BCM281XX_PIN_TRACEDT02		232
+#define BCM281XX_PIN_TRACEDT03		233
+#define BCM281XX_PIN_TRACEDT04		234
+#define BCM281XX_PIN_TRACEDT05		235
+#define BCM281XX_PIN_TRACEDT06		236
+#define BCM281XX_PIN_TRACEDT07		237
+#define BCM281XX_PIN_TRACEDT08		238
+#define BCM281XX_PIN_TRACEDT09		239
+#define BCM281XX_PIN_TRACEDT10		240
+#define BCM281XX_PIN_TRACEDT11		241
+#define BCM281XX_PIN_TRACEDT12		242
+#define BCM281XX_PIN_TRACEDT13		243
+#define BCM281XX_PIN_TRACEDT14		244
+#define BCM281XX_PIN_TRACEDT15		245
+#define BCM281XX_PIN_TXDATA3G0		246
+#define BCM281XX_PIN_TXPWRIND		247
+#define BCM281XX_PIN_UARTB1_UCTS	248
+#define BCM281XX_PIN_UARTB1_URTS	249
+#define BCM281XX_PIN_UARTB1_URXD	250
+#define BCM281XX_PIN_UARTB1_UTXD	251
+#define BCM281XX_PIN_UARTB2_URXD	252
+#define BCM281XX_PIN_UARTB2_UTXD	253
+#define BCM281XX_PIN_UARTB3_UCTS	254
+#define BCM281XX_PIN_UARTB3_URTS	255
+#define BCM281XX_PIN_UARTB3_URXD	256
+#define BCM281XX_PIN_UARTB3_UTXD	257
+#define BCM281XX_PIN_UARTB4_UCTS	258
+#define BCM281XX_PIN_UARTB4_URTS	259
+#define BCM281XX_PIN_UARTB4_URXD	260
+#define BCM281XX_PIN_UARTB4_UTXD	261
+#define BCM281XX_PIN_VC_CAM1_SCL	262
+#define BCM281XX_PIN_VC_CAM1_SDA	263
+#define BCM281XX_PIN_VC_CAM2_SCL	264
+#define BCM281XX_PIN_VC_CAM2_SDA	265
+#define BCM281XX_PIN_VC_CAM3_SCL	266
+#define BCM281XX_PIN_VC_CAM3_SDA	267
+
+/*
+ * Pin description definition.  The order here must be the same as defined in
+ * the PADCTRLREG block in the RDB, since the pin number is used as an index
+ * into this array.
+ */
+static const struct pinctrl_pin_desc bcm281xx_pinctrl_pins[] = {
+	BCM281XX_PIN_DESC(BCM281XX_PIN_ADCSYNC, "adcsync", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_BAT_RM, "bat_rm", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_BSC1_SCL, "bsc1_scl", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_BSC1_SDA, "bsc1_sda", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_BSC2_SCL, "bsc2_scl", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_BSC2_SDA, "bsc2_sda", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CLASSGPWR, "classgpwr", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CLK_CX8, "clk_cx8", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CLKOUT_0, "clkout_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CLKOUT_1, "clkout_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CLKOUT_2, "clkout_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CLKOUT_3, "clkout_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CLKREQ_IN_0, "clkreq_in_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CLKREQ_IN_1, "clkreq_in_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CWS_SYS_REQ1, "cws_sys_req1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CWS_SYS_REQ2, "cws_sys_req2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_CWS_SYS_REQ3, "cws_sys_req3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_DIGMIC1_CLK, "digmic1_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_DIGMIC1_DQ, "digmic1_dq", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_DIGMIC2_CLK, "digmic2_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_DIGMIC2_DQ, "digmic2_dq", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPEN13, "gpen13", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPEN14, "gpen14", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPEN15, "gpen15", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO00, "gpio00", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO01, "gpio01", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO02, "gpio02", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO03, "gpio03", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO04, "gpio04", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO05, "gpio05", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO06, "gpio06", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO07, "gpio07", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO08, "gpio08", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO09, "gpio09", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO10, "gpio10", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO11, "gpio11", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO12, "gpio12", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO13, "gpio13", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPIO14, "gpio14", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPS_PABLANK, "gps_pablank", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_GPS_TMARK, "gps_tmark", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_HDMI_SCL, "hdmi_scl", hdmi),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_HDMI_SDA, "hdmi_sda", hdmi),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_IC_DM, "ic_dm", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_IC_DP, "ic_dp", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_KP_COL_IP_0, "kp_col_ip_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_KP_COL_IP_1, "kp_col_ip_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_KP_COL_IP_2, "kp_col_ip_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_KP_COL_IP_3, "kp_col_ip_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_KP_ROW_OP_0, "kp_row_op_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_KP_ROW_OP_1, "kp_row_op_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_KP_ROW_OP_2, "kp_row_op_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_KP_ROW_OP_3, "kp_row_op_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_B_0, "lcd_b_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_B_1, "lcd_b_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_B_2, "lcd_b_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_B_3, "lcd_b_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_B_4, "lcd_b_4", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_B_5, "lcd_b_5", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_B_6, "lcd_b_6", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_B_7, "lcd_b_7", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_G_0, "lcd_g_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_G_1, "lcd_g_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_G_2, "lcd_g_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_G_3, "lcd_g_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_G_4, "lcd_g_4", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_G_5, "lcd_g_5", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_G_6, "lcd_g_6", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_G_7, "lcd_g_7", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_HSYNC, "lcd_hsync", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_OE, "lcd_oe", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_PCLK, "lcd_pclk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_R_0, "lcd_r_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_R_1, "lcd_r_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_R_2, "lcd_r_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_R_3, "lcd_r_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_R_4, "lcd_r_4", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_R_5, "lcd_r_5", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_R_6, "lcd_r_6", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_R_7, "lcd_r_7", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_LCD_VSYNC, "lcd_vsync", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MDMGPIO0, "mdmgpio0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MDMGPIO1, "mdmgpio1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MDMGPIO2, "mdmgpio2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MDMGPIO3, "mdmgpio3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MDMGPIO4, "mdmgpio4", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MDMGPIO5, "mdmgpio5", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MDMGPIO6, "mdmgpio6", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MDMGPIO7, "mdmgpio7", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MDMGPIO8, "mdmgpio8", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_0, "mphi_data_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_1, "mphi_data_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_2, "mphi_data_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_3, "mphi_data_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_4, "mphi_data_4", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_5, "mphi_data_5", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_6, "mphi_data_6", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_7, "mphi_data_7", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_8, "mphi_data_8", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_9, "mphi_data_9", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_10, "mphi_data_10", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_11, "mphi_data_11", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_12, "mphi_data_12", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_13, "mphi_data_13", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_14, "mphi_data_14", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_DATA_15, "mphi_data_15", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_HA0, "mphi_ha0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_HAT0, "mphi_hat0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_HAT1, "mphi_hat1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_HCE0_N, "mphi_hce0_n", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_HCE1_N, "mphi_hce1_n", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_HRD_N, "mphi_hrd_n", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_HWR_N, "mphi_hwr_n", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_RUN0, "mphi_run0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MPHI_RUN1, "mphi_run1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MTX_SCAN_CLK, "mtx_scan_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_MTX_SCAN_DATA, "mtx_scan_data", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_AD_0, "nand_ad_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_AD_1, "nand_ad_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_AD_2, "nand_ad_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_AD_3, "nand_ad_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_AD_4, "nand_ad_4", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_AD_5, "nand_ad_5", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_AD_6, "nand_ad_6", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_AD_7, "nand_ad_7", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_ALE, "nand_ale", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_CEN_0, "nand_cen_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_CEN_1, "nand_cen_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_CLE, "nand_cle", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_OEN, "nand_oen", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_RDY_0, "nand_rdy_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_RDY_1, "nand_rdy_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_WEN, "nand_wen", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_NAND_WP, "nand_wp", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_PC1, "pc1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_PC2, "pc2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_PMU_INT, "pmu_int", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_PMU_SCL, "pmu_scl", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_PMU_SDA, "pmu_sda", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RFST2G_MTSLOTEN3G, "rfst2g_mtsloten3g",
+		std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_RX_CTL, "rgmii_0_rx_ctl", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_RXC, "rgmii_0_rxc", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_RXD_0, "rgmii_0_rxd_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_RXD_1, "rgmii_0_rxd_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_RXD_2, "rgmii_0_rxd_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_RXD_3, "rgmii_0_rxd_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_TX_CTL, "rgmii_0_tx_ctl", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_TXC, "rgmii_0_txc", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_TXD_0, "rgmii_0_txd_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_TXD_1, "rgmii_0_txd_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_TXD_2, "rgmii_0_txd_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_0_TXD_3, "rgmii_0_txd_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_RX_CTL, "rgmii_1_rx_ctl", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_RXC, "rgmii_1_rxc", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_RXD_0, "rgmii_1_rxd_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_RXD_1, "rgmii_1_rxd_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_RXD_2, "rgmii_1_rxd_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_RXD_3, "rgmii_1_rxd_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_TX_CTL, "rgmii_1_tx_ctl", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_TXC, "rgmii_1_txc", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_TXD_0, "rgmii_1_txd_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_TXD_1, "rgmii_1_txd_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_TXD_2, "rgmii_1_txd_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_1_TXD_3, "rgmii_1_txd_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_GPIO_0, "rgmii_gpio_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_GPIO_1, "rgmii_gpio_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_GPIO_2, "rgmii_gpio_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RGMII_GPIO_3, "rgmii_gpio_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RTXDATA2G_TXDATA3G1,
+		"rtxdata2g_txdata3g1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RTXEN2G_TXDATA3G2, "rtxen2g_txdata3g2",
+		std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RXDATA3G0, "rxdata3g0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RXDATA3G1, "rxdata3g1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_RXDATA3G2, "rxdata3g2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO1_CLK, "sdio1_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO1_CMD, "sdio1_cmd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO1_DATA_0, "sdio1_data_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO1_DATA_1, "sdio1_data_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO1_DATA_2, "sdio1_data_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO1_DATA_3, "sdio1_data_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO4_CLK, "sdio4_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO4_CMD, "sdio4_cmd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO4_DATA_0, "sdio4_data_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO4_DATA_1, "sdio4_data_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO4_DATA_2, "sdio4_data_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SDIO4_DATA_3, "sdio4_data_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SIM_CLK, "sim_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SIM_DATA, "sim_data", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SIM_DET, "sim_det", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SIM_RESETN, "sim_resetn", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SIM2_CLK, "sim2_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SIM2_DATA, "sim2_data", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SIM2_DET, "sim2_det", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SIM2_RESETN, "sim2_resetn", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SRI_C, "sri_c", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SRI_D, "sri_d", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SRI_E, "sri_e", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP_EXTCLK, "ssp_extclk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP0_CLK, "ssp0_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP0_FS, "ssp0_fs", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP0_RXD, "ssp0_rxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP0_TXD, "ssp0_txd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP2_CLK, "ssp2_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP2_FS_0, "ssp2_fs_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP2_FS_1, "ssp2_fs_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP2_FS_2, "ssp2_fs_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP2_FS_3, "ssp2_fs_3", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP2_RXD_0, "ssp2_rxd_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP2_RXD_1, "ssp2_rxd_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP2_TXD_0, "ssp2_txd_0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP2_TXD_1, "ssp2_txd_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP3_CLK, "ssp3_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP3_FS, "ssp3_fs", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP3_RXD, "ssp3_rxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP3_TXD, "ssp3_txd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP4_CLK, "ssp4_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP4_FS, "ssp4_fs", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP4_RXD, "ssp4_rxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP4_TXD, "ssp4_txd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP5_CLK, "ssp5_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP5_FS, "ssp5_fs", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP5_RXD, "ssp5_rxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP5_TXD, "ssp5_txd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP6_CLK, "ssp6_clk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP6_FS, "ssp6_fs", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP6_RXD, "ssp6_rxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SSP6_TXD, "ssp6_txd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_STAT_1, "stat_1", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_STAT_2, "stat_2", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_SYSCLKEN, "sysclken", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACECLK, "traceclk", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT00, "tracedt00", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT01, "tracedt01", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT02, "tracedt02", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT03, "tracedt03", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT04, "tracedt04", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT05, "tracedt05", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT06, "tracedt06", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT07, "tracedt07", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT08, "tracedt08", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT09, "tracedt09", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT10, "tracedt10", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT11, "tracedt11", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT12, "tracedt12", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT13, "tracedt13", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT14, "tracedt14", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TRACEDT15, "tracedt15", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TXDATA3G0, "txdata3g0", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_TXPWRIND, "txpwrind", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB1_UCTS, "uartb1_ucts", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB1_URTS, "uartb1_urts", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB1_URXD, "uartb1_urxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB1_UTXD, "uartb1_utxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB2_URXD, "uartb2_urxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB2_UTXD, "uartb2_utxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB3_UCTS, "uartb3_ucts", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB3_URTS, "uartb3_urts", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB3_URXD, "uartb3_urxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB3_UTXD, "uartb3_utxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB4_UCTS, "uartb4_ucts", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB4_URTS, "uartb4_urts", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB4_URXD, "uartb4_urxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_UARTB4_UTXD, "uartb4_utxd", std),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_VC_CAM1_SCL, "vc_cam1_scl", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_VC_CAM1_SDA, "vc_cam1_sda", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_VC_CAM2_SCL, "vc_cam2_scl", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_VC_CAM2_SDA, "vc_cam2_sda", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_VC_CAM3_SCL, "vc_cam3_scl", i2c),
+	BCM281XX_PIN_DESC(BCM281XX_PIN_VC_CAM3_SDA, "vc_cam3_sda", i2c),
+};
+
+static const char * const bcm281xx_alt_groups[] = {
+	"adcsync",
+	"bat_rm",
+	"bsc1_scl",
+	"bsc1_sda",
+	"bsc2_scl",
+	"bsc2_sda",
+	"classgpwr",
+	"clk_cx8",
+	"clkout_0",
+	"clkout_1",
+	"clkout_2",
+	"clkout_3",
+	"clkreq_in_0",
+	"clkreq_in_1",
+	"cws_sys_req1",
+	"cws_sys_req2",
+	"cws_sys_req3",
+	"digmic1_clk",
+	"digmic1_dq",
+	"digmic2_clk",
+	"digmic2_dq",
+	"gpen13",
+	"gpen14",
+	"gpen15",
+	"gpio00",
+	"gpio01",
+	"gpio02",
+	"gpio03",
+	"gpio04",
+	"gpio05",
+	"gpio06",
+	"gpio07",
+	"gpio08",
+	"gpio09",
+	"gpio10",
+	"gpio11",
+	"gpio12",
+	"gpio13",
+	"gpio14",
+	"gps_pablank",
+	"gps_tmark",
+	"hdmi_scl",
+	"hdmi_sda",
+	"ic_dm",
+	"ic_dp",
+	"kp_col_ip_0",
+	"kp_col_ip_1",
+	"kp_col_ip_2",
+	"kp_col_ip_3",
+	"kp_row_op_0",
+	"kp_row_op_1",
+	"kp_row_op_2",
+	"kp_row_op_3",
+	"lcd_b_0",
+	"lcd_b_1",
+	"lcd_b_2",
+	"lcd_b_3",
+	"lcd_b_4",
+	"lcd_b_5",
+	"lcd_b_6",
+	"lcd_b_7",
+	"lcd_g_0",
+	"lcd_g_1",
+	"lcd_g_2",
+	"lcd_g_3",
+	"lcd_g_4",
+	"lcd_g_5",
+	"lcd_g_6",
+	"lcd_g_7",
+	"lcd_hsync",
+	"lcd_oe",
+	"lcd_pclk",
+	"lcd_r_0",
+	"lcd_r_1",
+	"lcd_r_2",
+	"lcd_r_3",
+	"lcd_r_4",
+	"lcd_r_5",
+	"lcd_r_6",
+	"lcd_r_7",
+	"lcd_vsync",
+	"mdmgpio0",
+	"mdmgpio1",
+	"mdmgpio2",
+	"mdmgpio3",
+	"mdmgpio4",
+	"mdmgpio5",
+	"mdmgpio6",
+	"mdmgpio7",
+	"mdmgpio8",
+	"mphi_data_0",
+	"mphi_data_1",
+	"mphi_data_2",
+	"mphi_data_3",
+	"mphi_data_4",
+	"mphi_data_5",
+	"mphi_data_6",
+	"mphi_data_7",
+	"mphi_data_8",
+	"mphi_data_9",
+	"mphi_data_10",
+	"mphi_data_11",
+	"mphi_data_12",
+	"mphi_data_13",
+	"mphi_data_14",
+	"mphi_data_15",
+	"mphi_ha0",
+	"mphi_hat0",
+	"mphi_hat1",
+	"mphi_hce0_n",
+	"mphi_hce1_n",
+	"mphi_hrd_n",
+	"mphi_hwr_n",
+	"mphi_run0",
+	"mphi_run1",
+	"mtx_scan_clk",
+	"mtx_scan_data",
+	"nand_ad_0",
+	"nand_ad_1",
+	"nand_ad_2",
+	"nand_ad_3",
+	"nand_ad_4",
+	"nand_ad_5",
+	"nand_ad_6",
+	"nand_ad_7",
+	"nand_ale",
+	"nand_cen_0",
+	"nand_cen_1",
+	"nand_cle",
+	"nand_oen",
+	"nand_rdy_0",
+	"nand_rdy_1",
+	"nand_wen",
+	"nand_wp",
+	"pc1",
+	"pc2",
+	"pmu_int",
+	"pmu_scl",
+	"pmu_sda",
+	"rfst2g_mtsloten3g",
+	"rgmii_0_rx_ctl",
+	"rgmii_0_rxc",
+	"rgmii_0_rxd_0",
+	"rgmii_0_rxd_1",
+	"rgmii_0_rxd_2",
+	"rgmii_0_rxd_3",
+	"rgmii_0_tx_ctl",
+	"rgmii_0_txc",
+	"rgmii_0_txd_0",
+	"rgmii_0_txd_1",
+	"rgmii_0_txd_2",
+	"rgmii_0_txd_3",
+	"rgmii_1_rx_ctl",
+	"rgmii_1_rxc",
+	"rgmii_1_rxd_0",
+	"rgmii_1_rxd_1",
+	"rgmii_1_rxd_2",
+	"rgmii_1_rxd_3",
+	"rgmii_1_tx_ctl",
+	"rgmii_1_txc",
+	"rgmii_1_txd_0",
+	"rgmii_1_txd_1",
+	"rgmii_1_txd_2",
+	"rgmii_1_txd_3",
+	"rgmii_gpio_0",
+	"rgmii_gpio_1",
+	"rgmii_gpio_2",
+	"rgmii_gpio_3",
+	"rtxdata2g_txdata3g1",
+	"rtxen2g_txdata3g2",
+	"rxdata3g0",
+	"rxdata3g1",
+	"rxdata3g2",
+	"sdio1_clk",
+	"sdio1_cmd",
+	"sdio1_data_0",
+	"sdio1_data_1",
+	"sdio1_data_2",
+	"sdio1_data_3",
+	"sdio4_clk",
+	"sdio4_cmd",
+	"sdio4_data_0",
+	"sdio4_data_1",
+	"sdio4_data_2",
+	"sdio4_data_3",
+	"sim_clk",
+	"sim_data",
+	"sim_det",
+	"sim_resetn",
+	"sim2_clk",
+	"sim2_data",
+	"sim2_det",
+	"sim2_resetn",
+	"sri_c",
+	"sri_d",
+	"sri_e",
+	"ssp_extclk",
+	"ssp0_clk",
+	"ssp0_fs",
+	"ssp0_rxd",
+	"ssp0_txd",
+	"ssp2_clk",
+	"ssp2_fs_0",
+	"ssp2_fs_1",
+	"ssp2_fs_2",
+	"ssp2_fs_3",
+	"ssp2_rxd_0",
+	"ssp2_rxd_1",
+	"ssp2_txd_0",
+	"ssp2_txd_1",
+	"ssp3_clk",
+	"ssp3_fs",
+	"ssp3_rxd",
+	"ssp3_txd",
+	"ssp4_clk",
+	"ssp4_fs",
+	"ssp4_rxd",
+	"ssp4_txd",
+	"ssp5_clk",
+	"ssp5_fs",
+	"ssp5_rxd",
+	"ssp5_txd",
+	"ssp6_clk",
+	"ssp6_fs",
+	"ssp6_rxd",
+	"ssp6_txd",
+	"stat_1",
+	"stat_2",
+	"sysclken",
+	"traceclk",
+	"tracedt00",
+	"tracedt01",
+	"tracedt02",
+	"tracedt03",
+	"tracedt04",
+	"tracedt05",
+	"tracedt06",
+	"tracedt07",
+	"tracedt08",
+	"tracedt09",
+	"tracedt10",
+	"tracedt11",
+	"tracedt12",
+	"tracedt13",
+	"tracedt14",
+	"tracedt15",
+	"txdata3g0",
+	"txpwrind",
+	"uartb1_ucts",
+	"uartb1_urts",
+	"uartb1_urxd",
+	"uartb1_utxd",
+	"uartb2_urxd",
+	"uartb2_utxd",
+	"uartb3_ucts",
+	"uartb3_urts",
+	"uartb3_urxd",
+	"uartb3_utxd",
+	"uartb4_ucts",
+	"uartb4_urts",
+	"uartb4_urxd",
+	"uartb4_utxd",
+	"vc_cam1_scl",
+	"vc_cam1_sda",
+	"vc_cam2_scl",
+	"vc_cam2_sda",
+	"vc_cam3_scl",
+	"vc_cam3_sda",
+};
+
+#define BCM281XX_PIN_FUNCTION(fcn_name)			\
+{							\
+	.name = #fcn_name,				\
+	.groups = bcm281xx_alt_groups,			\
+	.ngroups = ARRAY_SIZE(bcm281xx_alt_groups),	\
+}
+
+static const struct bcm281xx_pin_function bcm281xx_functions[] = {
+	BCM281XX_PIN_FUNCTION(alt1),
+	BCM281XX_PIN_FUNCTION(alt2),
+	BCM281XX_PIN_FUNCTION(alt3),
+	BCM281XX_PIN_FUNCTION(alt4),
+};
+
+static const struct regmap_config bcm281xx_pinctrl_regmap_config = {
+	.reg_bits = 32,
+	.reg_stride = 4,
+	.val_bits = 32,
+	.max_register = BCM281XX_PIN_VC_CAM3_SDA,
+};
+
+static struct bcm281xx_pinctrl_drv_data bcm281xx_pinctrl = {
+	.device_type = BCM281XX_PINCTRL_TYPE,
+
+	.pins = bcm281xx_pinctrl_pins,
+	.npins = ARRAY_SIZE(bcm281xx_pinctrl_pins),
+	.functions = bcm281xx_functions,
+	.nfunctions = ARRAY_SIZE(bcm281xx_functions),
+
+	.regmap_config = bcm281xx_pinctrl_regmap_config,
+};
+
+/* BCM21664 data */
+#define BCM21664_PIN_ADCSYN		0
+#define BCM21664_PIN_BATRM		1
+#define BCM21664_PIN_BSC1CLK		2
+#define BCM21664_PIN_BSC1DAT		3
+#define BCM21664_PIN_CAMCS0		4
+#define BCM21664_PIN_CAMCS1		5
+#define BCM21664_PIN_CLK32K		6
+#define BCM21664_PIN_CLK_CX8		7
+#define BCM21664_PIN_DCLK1		8
+#define BCM21664_PIN_DCLK4		9
+#define BCM21664_PIN_DCLKREQ1		10
+#define BCM21664_PIN_DCLKREQ4		11
+#define BCM21664_PIN_DMIC0CLK		12
+#define BCM21664_PIN_DMIC0DQ		13
+#define BCM21664_PIN_DSI0TE		14
+#define BCM21664_PIN_GPIO00		15
+#define BCM21664_PIN_GPIO01		16
+#define BCM21664_PIN_GPIO02		17
+#define BCM21664_PIN_GPIO03		18
+#define BCM21664_PIN_GPIO04		19
+#define BCM21664_PIN_GPIO05		20
+#define BCM21664_PIN_GPIO06		21
+#define BCM21664_PIN_GPIO07		22
+#define BCM21664_PIN_GPIO08		23
+#define BCM21664_PIN_GPIO09		24
+#define BCM21664_PIN_GPIO10		25
+#define BCM21664_PIN_GPIO11		26
+#define BCM21664_PIN_GPIO12		27
+#define BCM21664_PIN_GPIO13		28
+#define BCM21664_PIN_GPIO14		29
+#define BCM21664_PIN_GPIO15		30
+#define BCM21664_PIN_GPIO16		31
+#define BCM21664_PIN_GPIO17		32
+#define BCM21664_PIN_GPIO18		33
+#define BCM21664_PIN_GPIO19		34
+#define BCM21664_PIN_GPIO20		35
+#define BCM21664_PIN_GPIO21		36
+#define BCM21664_PIN_GPIO22		37
+#define BCM21664_PIN_GPIO23		38
+#define BCM21664_PIN_GPIO24		39
+#define BCM21664_PIN_GPIO25		40
+#define BCM21664_PIN_GPIO26		41
+#define BCM21664_PIN_GPIO27		42
+#define BCM21664_PIN_GPIO28		43
+#define BCM21664_PIN_GPIO32		44
+#define BCM21664_PIN_GPIO33		45
+#define BCM21664_PIN_GPIO34		46
+#define BCM21664_PIN_GPS_CALREQ		47
+#define BCM21664_PIN_GPS_HOSTREQ	48
+#define BCM21664_PIN_GPS_PABLANK	49
+#define BCM21664_PIN_GPS_TMARK		50
+#define BCM21664_PIN_ICUSBDM		51
+#define BCM21664_PIN_ICUSBDP		52
+#define BCM21664_PIN_LCDCS0		53
+#define BCM21664_PIN_LCDRES		54
+#define BCM21664_PIN_LCDSCL		55
+#define BCM21664_PIN_LCDSDA		56
+#define BCM21664_PIN_LCDTE		57
+#define BCM21664_PIN_MDMGPIO00		58
+#define BCM21664_PIN_MDMGPIO01		59
+#define BCM21664_PIN_MDMGPIO02		60
+#define BCM21664_PIN_MDMGPIO03		61
+#define BCM21664_PIN_MDMGPIO04		62
+#define BCM21664_PIN_MDMGPIO05		63
+#define BCM21664_PIN_MDMGPIO06		64
+#define BCM21664_PIN_MDMGPIO07		65
+#define BCM21664_PIN_MDMGPIO08		66
+#define BCM21664_PIN_MMC0CK		67
+#define BCM21664_PIN_MMC0CMD		68
+#define BCM21664_PIN_MMC0DAT0		69
+#define BCM21664_PIN_MMC0DAT1		70
+#define BCM21664_PIN_MMC0DAT2		71
+#define BCM21664_PIN_MMC0DAT3		72
+#define BCM21664_PIN_MMC0DAT4		73
+#define BCM21664_PIN_MMC0DAT5		74
+#define BCM21664_PIN_MMC0DAT6		75
+#define BCM21664_PIN_MMC0DAT7		76
+#define BCM21664_PIN_MMC0RST		77
+#define BCM21664_PIN_MMC1CK		78
+#define BCM21664_PIN_MMC1CMD		79
+#define BCM21664_PIN_MMC1DAT0		80
+#define BCM21664_PIN_MMC1DAT1		81
+#define BCM21664_PIN_MMC1DAT2		82
+#define BCM21664_PIN_MMC1DAT3		83
+#define BCM21664_PIN_MMC1DAT4		84
+#define BCM21664_PIN_MMC1DAT5		85
+#define BCM21664_PIN_MMC1DAT6		86
+#define BCM21664_PIN_MMC1DAT7		87
+#define BCM21664_PIN_MMC1RST		88
+#define BCM21664_PIN_PC1		89
+#define BCM21664_PIN_PC2		90
+#define BCM21664_PIN_PMBSCCLK		91
+#define BCM21664_PIN_PMBSCDAT		92
+#define BCM21664_PIN_PMUINT		93
+#define BCM21664_PIN_RESETN		94
+#define BCM21664_PIN_RFST2G_MTSLOTEN3G	95
+#define BCM21664_PIN_RTXDATA2G_TXDATA3G1	96
+#define BCM21664_PIN_RTXEN2G_TXDATA3G2	97
+#define BCM21664_PIN_RXDATA3G0		98
+#define BCM21664_PIN_RXDATA3G1		99
+#define BCM21664_PIN_RXDATA3G2		100
+#define BCM21664_PIN_SDCK		101
+#define BCM21664_PIN_SDCMD		102
+#define BCM21664_PIN_SDDAT0		103
+#define BCM21664_PIN_SDDAT1		104
+#define BCM21664_PIN_SDDAT2		105
+#define BCM21664_PIN_SDDAT3		106
+#define BCM21664_PIN_SIMCLK		107
+#define BCM21664_PIN_SIMDAT		108
+#define BCM21664_PIN_SIMDET		109
+#define BCM21664_PIN_SIMRST		110
+#define BCM21664_PIN_GPIO93		111
+#define BCM21664_PIN_GPIO94		112
+#define BCM21664_PIN_SPI0CLK		113
+#define BCM21664_PIN_SPI0FSS		114
+#define BCM21664_PIN_SPI0RXD		115
+#define BCM21664_PIN_SPI0TXD		116
+#define BCM21664_PIN_SRI_C		117
+#define BCM21664_PIN_SRI_D		118
+#define BCM21664_PIN_SRI_E		119
+#define BCM21664_PIN_SSPCK		120
+#define BCM21664_PIN_SSPDI		121
+#define BCM21664_PIN_SSPDO		122
+#define BCM21664_PIN_SSPSYN		123
+#define BCM21664_PIN_STAT1		124
+#define BCM21664_PIN_STAT2		125
+#define BCM21664_PIN_SWCLKTCK		126
+#define BCM21664_PIN_SWDIOTMS		127
+#define BCM21664_PIN_SYSCLKEN		128
+#define BCM21664_PIN_TDI		129
+#define BCM21664_PIN_TDO		130
+#define BCM21664_PIN_TESTMODE		131
+#define BCM21664_PIN_TRACECLK		132
+#define BCM21664_PIN_TRACEDT00		133
+#define BCM21664_PIN_TRACEDT01		134
+#define BCM21664_PIN_TRACEDT02		135
+#define BCM21664_PIN_TRACEDT03		136
+#define BCM21664_PIN_TRACEDT04		137
+#define BCM21664_PIN_TRACEDT05		138
+#define BCM21664_PIN_TRACEDT06		139
+#define BCM21664_PIN_TRACEDT07		140
+#define BCM21664_PIN_TRSTB		141
+#define BCM21664_PIN_TXDATA3G0		142
+#define BCM21664_PIN_UBCTSN		143
+#define BCM21664_PIN_UBRTSN		144
+#define BCM21664_PIN_UBRX		145
+#define BCM21664_PIN_UBTX		146
+#define BCM21664_PIN_TRACEDT08		147
+#define BCM21664_PIN_TRACEDT09		148
+#define BCM21664_PIN_TRACEDT10		149
+#define BCM21664_PIN_TRACEDT11		150
+#define BCM21664_PIN_TRACEDT12		151
+#define BCM21664_PIN_TRACEDT13		152
+#define BCM21664_PIN_TRACEDT14		153
+#define BCM21664_PIN_TRACEDT15		154
+
+static const struct pinctrl_pin_desc bcm21664_pinctrl_pins[] = {
+	BCM281XX_PIN_DESC(BCM21664_PIN_ADCSYN, "adcsyn", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_BATRM, "batrm", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_BSC1CLK, "bsc1clk", i2c),
+	BCM281XX_PIN_DESC(BCM21664_PIN_BSC1DAT, "bsc1dat", i2c),
+	BCM281XX_PIN_DESC(BCM21664_PIN_CAMCS0, "camcs0", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_CAMCS1, "camcs1", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_CLK32K, "clk32k", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_CLK_CX8, "clk_cx8", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_DCLK1, "dclk1", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_DCLK4, "dclk4", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_DCLKREQ1, "dclkreq1", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_DCLKREQ4, "dclkreq4", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_DMIC0CLK, "dmic0clk", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_DMIC0DQ, "dmic0dq", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_DSI0TE, "dsi0te", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO00, "gpio00", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO01, "gpio01", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO02, "gpio02", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO03, "gpio03", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO04, "gpio04", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO05, "gpio05", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO06, "gpio06", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO07, "gpio07", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO08, "gpio08", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO09, "gpio09", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO10, "gpio10", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO11, "gpio11", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO12, "gpio12", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO13, "gpio13", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO14, "gpio14", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO15, "gpio15", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO16, "gpio16", i2c),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO17, "gpio17", i2c),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO18, "gpio18", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO19, "gpio19", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO20, "gpio20", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO21, "gpio21", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO22, "gpio22", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO23, "gpio23", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO24, "gpio24", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO25, "gpio25", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO26, "gpio26", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO27, "gpio27", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO28, "gpio28", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO32, "gpio32", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO33, "gpio33", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO34, "gpio34", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPS_CALREQ, "gps_calreq", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPS_HOSTREQ, "gps_hostreq", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPS_PABLANK, "gps_pablank", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPS_TMARK, "gps_tmark", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_ICUSBDM, "icusbdm", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_ICUSBDP, "icusbdp", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_LCDCS0, "lcdcs0", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_LCDRES, "lcdres", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_LCDSCL, "lcdscl", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_LCDSDA, "lcdsda", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_LCDTE, "lcdte", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MDMGPIO00, "mdmgpio00", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MDMGPIO01, "mdmgpio01", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MDMGPIO02, "mdmgpio02", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MDMGPIO03, "mdmgpio03", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MDMGPIO04, "mdmgpio04", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MDMGPIO05, "mdmgpio05", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MDMGPIO06, "mdmgpio06", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MDMGPIO07, "mdmgpio07", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MDMGPIO08, "mdmgpio08", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0CK, "mmc0ck", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0CMD, "mmc0cmd", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0DAT0, "mmc0dat0", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0DAT1, "mmc0dat1", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0DAT2, "mmc0dat2", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0DAT3, "mmc0dat3", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0DAT4, "mmc0dat4", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0DAT5, "mmc0dat5", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0DAT6, "mmc0dat6", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0DAT7, "mmc0dat7", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC0RST, "mmc0rst", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1CK, "mmc1ck", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1CMD, "mmc1cmd", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1DAT0, "mmc1dat0", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1DAT1, "mmc1dat1", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1DAT2, "mmc1dat2", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1DAT3, "mmc1dat3", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1DAT4, "mmc1dat4", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1DAT5, "mmc1dat5", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1DAT6, "mmc1dat6", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1DAT7, "mmc1dat7", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_MMC1RST, "mmc1rst", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_PC1, "pc1", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_PC2, "pc2", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_PMBSCCLK, "pmbscclk", i2c),
+	BCM281XX_PIN_DESC(BCM21664_PIN_PMBSCDAT, "pmbscdat", i2c),
+	BCM281XX_PIN_DESC(BCM21664_PIN_PMUINT, "pmuint", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_RESETN, "resetn", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_RFST2G_MTSLOTEN3G, "rfst2g_mtsloten3g", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_RTXDATA2G_TXDATA3G1, "rtxdata2g_txdata3g1", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_RTXEN2G_TXDATA3G2, "rtxen2g_txdata3g2", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_RXDATA3G0, "rxdata3g0", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_RXDATA3G1, "rxdata3g1", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_RXDATA3G2, "rxdata3g2", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SDCK, "sdck", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SDCMD, "sdcmd", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SDDAT0, "sddat0", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SDDAT1, "sddat1", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SDDAT2, "sddat2", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SDDAT3, "sddat3", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SIMCLK, "simclk", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SIMDAT, "simdat", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SIMDET, "simdet", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SIMRST, "simrst", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO93, "gpio93", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_GPIO94, "gpio94", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SPI0CLK, "spi0clk", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SPI0FSS, "spi0fss", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SPI0RXD, "spi0rxd", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SPI0TXD, "spi0txd", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SRI_C, "sri_c", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SRI_D, "sri_d", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SRI_E, "sri_e", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SSPCK, "sspck", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SSPDI, "sspdi", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SSPDO, "sspdo", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SSPSYN, "sspsyn", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_STAT1, "stat1", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_STAT2, "stat2", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SWCLKTCK, "swclktck", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SWDIOTMS, "swdiotms", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_SYSCLKEN, "sysclken", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TDI, "tdi", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TDO, "tdo", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TESTMODE, "testmode", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACECLK, "traceclk", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT00, "tracedt00", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT01, "tracedt01", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT02, "tracedt02", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT03, "tracedt03", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT04, "tracedt04", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT05, "tracedt05", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT06, "tracedt06", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT07, "tracedt07", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRSTB, "trstb", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TXDATA3G0, "txdata3g0", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_UBCTSN, "ubctsn", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_UBRTSN, "ubrtsn", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_UBRX, "ubrx", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_UBTX, "ubtx", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT08, "tracedt08", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT09, "tracedt09", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT10, "tracedt10", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT11, "tracedt11", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT12, "tracedt12", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT13, "tracedt13", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT14, "tracedt14", std),
+	BCM281XX_PIN_DESC(BCM21664_PIN_TRACEDT15, "tracedt15", std),
+};
+
+static const char * const bcm21664_alt_groups[] = {
+	"adcsyn",
+	"batrm",
+	"bsc1clk",
+	"bsc1dat",
+	"camcs0",
+	"camcs1",
+	"clk32k",
+	"clk_cx8",
+	"dclk1",
+	"dclk4",
+	"dclkreq1",
+	"dclkreq4",
+	"dmic0clk",
+	"dmic0dq",
+	"dsi0te",
+	"gpio00",
+	"gpio01",
+	"gpio02",
+	"gpio03",
+	"gpio04",
+	"gpio05",
+	"gpio06",
+	"gpio07",
+	"gpio08",
+	"gpio09",
+	"gpio10",
+	"gpio11",
+	"gpio12",
+	"gpio13",
+	"gpio14",
+	"gpio15",
+	"gpio16",
+	"gpio17",
+	"gpio18",
+	"gpio19",
+	"gpio20",
+	"gpio21",
+	"gpio22",
+	"gpio23",
+	"gpio24",
+	"gpio25",
+	"gpio26",
+	"gpio27",
+	"gpio28",
+	"gpio32",
+	"gpio33",
+	"gpio34",
+	"gps_calreq",
+	"gps_hostreq",
+	"gps_pablank",
+	"gps_tmark",
+	"icusbdm",
+	"icusbdp",
+	"lcdcs0",
+	"lcdres",
+	"lcdscl",
+	"lcdsda",
+	"lcdte",
+	"mdmgpio00",
+	"mdmgpio01",
+	"mdmgpio02",
+	"mdmgpio03",
+	"mdmgpio04",
+	"mdmgpio05",
+	"mdmgpio06",
+	"mdmgpio07",
+	"mdmgpio08",
+	"mmc0ck",
+	"mmc0cmd",
+	"mmc0dat0",
+	"mmc0dat1",
+	"mmc0dat2",
+	"mmc0dat3",
+	"mmc0dat4",
+	"mmc0dat5",
+	"mmc0dat6",
+	"mmc0dat7",
+	"mmc0rst",
+	"mmc1ck",
+	"mmc1cmd",
+	"mmc1dat0",
+	"mmc1dat1",
+	"mmc1dat2",
+	"mmc1dat3",
+	"mmc1dat4",
+	"mmc1dat5",
+	"mmc1dat6",
+	"mmc1dat7",
+	"mmc1rst",
+	"pc1",
+	"pc2",
+	"pmbscclk",
+	"pmbscdat",
+	"pmuint",
+	"resetn",
+	"rfst2g_mtsloten3g",
+	"rtxdata2g_txdata3g1",
+	"rtxen2g_txdata3g2",
+	"rxdata3g0",
+	"rxdata3g1",
+	"rxdata3g2",
+	"sdck",
+	"sdcmd",
+	"sddat0",
+	"sddat1",
+	"sddat2",
+	"sddat3",
+	"simclk",
+	"simdat",
+	"simdet",
+	"simrst",
+	"gpio93",
+	"gpio94",
+	"spi0clk",
+	"spi0fss",
+	"spi0rxd",
+	"spi0txd",
+	"sri_c",
+	"sri_d",
+	"sri_e",
+	"sspck",
+	"sspdi",
+	"sspdo",
+	"sspsyn",
+	"stat1",
+	"stat2",
+	"swclktck",
+	"swdiotms",
+	"sysclken",
+	"tdi",
+	"tdo",
+	"testmode",
+	"traceclk",
+	"tracedt00",
+	"tracedt01",
+	"tracedt02",
+	"tracedt03",
+	"tracedt04",
+	"tracedt05",
+	"tracedt06",
+	"tracedt07",
+	"trstb",
+	"txdata3g0",
+	"ubctsn",
+	"ubrtsn",
+	"ubrx",
+	"ubtx",
+	"tracedt08",
+	"tracedt09",
+	"tracedt10",
+	"tracedt11",
+	"tracedt12",
+	"tracedt13",
+	"tracedt14",
+	"tracedt15",
+};
+
+#define BCM21664_PIN_FUNCTION(fcn_name)			\
+{							\
+	.name = #fcn_name,				\
+	.groups = bcm21664_alt_groups,			\
+	.ngroups = ARRAY_SIZE(bcm21664_alt_groups),	\
+}
+
+static const struct bcm281xx_pin_function bcm21664_functions[] = {
+	BCM21664_PIN_FUNCTION(alt1),
+	BCM21664_PIN_FUNCTION(alt2),
+	BCM21664_PIN_FUNCTION(alt3),
+	BCM21664_PIN_FUNCTION(alt4),
+	BCM21664_PIN_FUNCTION(alt5),
+	BCM21664_PIN_FUNCTION(alt6),
+};
+
+static const struct regmap_config bcm21664_pinctrl_regmap_config = {
+	.reg_bits = 32,
+	.reg_stride = 4,
+	.val_bits = 32,
+	.max_register = BCM21664_PIN_TRACEDT15,
+};
+
+static struct bcm281xx_pinctrl_drv_data bcm21664_pinctrl = {
+	.device_type = BCM21664_PINCTRL_TYPE,
+
+	.pins = bcm21664_pinctrl_pins,
+	.npins = ARRAY_SIZE(bcm21664_pinctrl_pins),
+	.functions = bcm21664_functions,
+	.nfunctions = ARRAY_SIZE(bcm21664_functions),
+
+	.regmap_config = bcm21664_pinctrl_regmap_config,
+};
+
+#endif /* __PINCTRL_BCM281XX_H__ */
