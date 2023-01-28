@@ -57,6 +57,12 @@
 #define BCM21664_I2C_PIN_REG_PULL_UP_STR_MASK	0x0020
 #define BCM21664_I2C_PIN_REG_PULL_UP_STR_SHIFT	5
 
+/* BCM21664 access lock registers */
+#define BCM21664_WR_ACCESS_PASSWORD		0xA5A501
+#define BCM21664_WR_ACCESS_OFFSET		0x07F0
+#define BCM21664_ACCESS_LOCK_OFFSET(lock)	(0x0780 + (lock * 4))
+#define BCM21664_ACCESS_LOCK_COUNT		5
+
 static inline enum bcm281xx_pin_type pin_type_get(struct pinctrl_dev *pctldev,
 						  unsigned pin)
 {
@@ -532,6 +538,17 @@ static struct pinctrl_desc bcm281xx_pinctrl_desc = {
 	.owner = THIS_MODULE,
 };
 
+/* BCM21664 padctrl has access lock registers, this function unlocks them */
+static void bcm21664_pinctrl_unlock(struct bcm281xx_pinctrl_data *pdata) {
+	int i;
+
+	for (i = 0; i < BCM21664_ACCESS_LOCK_COUNT; i++) {
+		writel(BCM21664_WR_ACCESS_PASSWORD,
+			pdata->reg_base + BCM21664_WR_ACCESS_OFFSET);
+		writel(0x0, pdata->reg_base + BCM21664_ACCESS_LOCK_OFFSET(i));
+	}
+};
+
 static struct bcm281xx_pinctrl_data bcm281xx_pinctrl_pdata;
 
 static int __init bcm281xx_pinctrl_probe(struct platform_device *pdev)
@@ -570,6 +587,9 @@ static int __init bcm281xx_pinctrl_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to register pinctrl\n");
 		return PTR_ERR(pctl);
 	}
+
+	if (pdata->drv_data->device_type == BCM21664_PINCTRL_TYPE)
+		bcm21664_pinctrl_unlock(pdata);
 
 	platform_set_drvdata(pdev, pdata);
 
