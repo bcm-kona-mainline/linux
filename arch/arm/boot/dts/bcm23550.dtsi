@@ -81,6 +81,17 @@
 	};
 
 	hub: hub@34000000 {
+		core_timer: timer@100a800 {
+			compatible = "brcm,kona-timer";
+			reg = <0x0100a800 0x1c>;
+			interrupts = <GIC_SPI 210 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 211 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 212 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 213 IRQ_TYPE_LEVEL_HIGH>;
+			clock-frequency = <32768>; /* static 32khz */
+			brcm,kona-system-timer-channel = <3>;
+		};
+
 		pwrmgr: pwrmgr@1010000 {
 			compatible = "brcm,bcm23550-pwrmgr";
 			reg = <0x01010000 0x4300>;
