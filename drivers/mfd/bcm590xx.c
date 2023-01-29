@@ -48,8 +48,6 @@ static int bcm590xx_i2c_probe(struct i2c_client *i2c_pri,
 	if (!bcm590xx)
 		return -ENOMEM;
 
-	bcm590xx->device_type = id->name;
-
 	i2c_set_clientdata(i2c_pri, bcm590xx);
 	bcm590xx->dev = &i2c_pri->dev;
 	bcm590xx->i2c_pri = i2c_pri;
@@ -96,14 +94,12 @@ err:
 
 static const struct of_device_id bcm590xx_of_match[] = {
 	{ .compatible = "brcm,bcm59056" },
-	{ .compatible = "brcm,bcm59054" },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, bcm590xx_of_match);
 
 static const struct i2c_device_id bcm590xx_i2c_id[] = {
 	{ "bcm59056" },
-	{ "bcm59054" },
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, bcm590xx_i2c_id);
