@@ -374,11 +374,6 @@ static const unsigned int bcm59054_ldo_3_table[] = {
 	1464000, 1500000, 1786000,
 };
 
-/* BCM59054 locks the voltage of micldo at 1.8v */
-static const unsigned int bcm59054_ldo_mic[] = {
-	1800000,
-};
-
 /* DCDC group SR: supported voltages in microvolts */
 static const struct linear_range bcm59054_dcdc_sr_ranges[] = {
 	REGULATOR_LINEAR_RANGE(0, 0, 1, 0),
@@ -431,7 +426,7 @@ static struct bcm590xx_info bcm59054_regs[] = {
 	BCM59054_REG_TABLE(mmcldo1, ldo_1_table),
 	BCM59054_REG_TABLE(mmcldo2, ldo_1_table),
 	BCM59054_REG_TABLE(audldo, ldo_1_table),
-	BCM59054_REG_TABLE(micldo, ldo_mic),
+	BCM59054_REG_TABLE(micldo, ldo_1_table),
 	BCM59054_REG_TABLE(usbldo, ldo_1_table),
 	BCM59054_REG_TABLE(vibldo, ldo_2_table),
 	BCM59054_REG_RANGES(csr, dcdc_csr_ranges),
@@ -452,7 +447,7 @@ static struct bcm590xx_info bcm59054_regs[] = {
 static int bcm59054_reg_is_ldo(int id) { return (id < BCM59054_REG_CSR); }
 static int bcm59054_reg_is_gpldo(int id) { return (id > BCM59054_REG_VSR); }
 static int bcm59054_reg_is_static(int id) \
-	{ return (id == BCM59054_REG_MICLDO); }
+	{ return false; }
 
 static int bcm59054_reg_is_secondary(int id) \
 	{ return bcm59054_reg_is_gpldo(id); }
