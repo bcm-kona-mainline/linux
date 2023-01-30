@@ -1,0 +1,231 @@
+// SPDX-License-Identifier: GPL-2.0-only
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+
+#include "bcm21664.dtsi"
+
+/ {
+	model = "Samsung Galaxy Trend Plus";
+	compatible = "brcm,bcm21664-samsung-kylepro", "brcm,bcm21664", "samsung,kylepro";
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x80000000 0x2e000000>; /* 736 MB */
+	};
+};
+
+&uartb {
+	status = "okay";
+};
+
+&uartb2 {
+	status = "okay";
+};
+
+&uartb3 {
+	status = "okay";
+};
+
+&sdio1 {
+	max-frequency = <48000000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&cd_pullup>, <&sdio1_pins>;
+	cd-gpios = <&gpio 91 GPIO_ACTIVE_LOW>;
+	status = "okay";
+};
+
+&sdio2 {
+	max-frequency = <52000000>;
+	non-removable;
+	bus-width = <8>;
+	status = "okay";
+};
+
+&usbotg {
+	status = "okay";
+};
+
+&usbphy {
+	status = "okay";
+};
+
+&pinctrl {
+	cd_pullup: cd-pullup {
+		pins = "spi0txd";
+		function = "alt5"; /* PF_GPIO91 */
+		bias-pull-up;
+	};
+};
+
+&pmu_bsc {
+	clock-frequency = <3400000>;
+	status = "okay";
+
+	pmu: pmu@8 {
+		reg = <0x08>;
+	};
+};
+
+#include "bcm59054.dtsi"
+
+&pmu {
+	compatible = "brcm,bcm59054";
+	reg = <0x08>;
+	interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>,
+		         <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
+	regulators {
+		rfldo_reg: rfldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			/*regulator-initial-mode = <0x8>; */ /* REGULATOR_MODE_STANDBY */
+		};
+
+		camldo1_reg: camldo1 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			/*regulator-initial-mode = <0x8>;*/ /* REGULATOR_MODE_STANDBY */
+		};
+
+		camldo2_reg: camldo2 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			/*regulator-initial-mode = <0x8>;*/ /* REGULATOR_MODE_STANDBY */
+		};
+
+		simldo1_reg: simldo1 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			/*regulator-allowed-modes = <0x2 0x4 0x8>;*/ /* NORMAL, IDLE, STANDBY */
+		};
+
+		simldo2_reg: simldo2 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			/*regulator-allowed-modes = <0x2 0x4 0x8>;*/ /* NORMAL, IDLE, STANDBY */
+		};
+
+		sdldo_reg: sdldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		sdxldo_reg: sdxldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		mmcldo1_reg: mmcldo1 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		mmcldo2_reg: mmcldo2 {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		audldo_reg: audldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			/*regulator-allowed-modes = <0x2 0x4 0x8>;*/ /* NORMAL, IDLE, STANDBY */
+			/*regulator-initial-mode = <0x8>;*/ /* REGULATOR_MODE_STANDBY */
+		};
+
+		usbldo_reg: usbldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		micldo_reg: micldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		vibldo_reg: vibldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		gpldo1_reg: gpldo1 {
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		gpldo2_reg: gpldo2 {
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		gpldo3_reg: gpldo3 {
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <3300000>;
+		};
+
+		tcxldo_reg: tcxldo {
+			regulator-min-microvolt = <1300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+		};
+
+		lvldo1_reg: lvldo1 {
+			regulator-min-microvolt = <1000000>;
+			regulator-max-microvolt = <1800000>;
+		};
+
+		lvldo2_reg: lvldo2 {
+			regulator-min-microvolt = <1000000>;
+			regulator-max-microvolt = <1800000>;
+		};
+
+		vsr_reg: vsr {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+		};
+
+		csr_reg: csr {
+			regulator-min-microvolt = <700000>;
+			regulator-max-microvolt = <1440000>;
+			regulator-always-on;
+			/* regulator-initial-mode = <0x8>; */ /* REGULATOR_MODE_STANDBY */
+		};
+
+		mmsr_reg: mmsr {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;			
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
+		};
+
+		sdsr1_reg: sdsr1 {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;			
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
+		};
+
+		sdsr2_reg: sdsr2 {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;			
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
+		};
+
+		iosr1_reg: iosr1 {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;
+			/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
+		};
+
+		iosr2_reg: iosr2 {
+			regulator-min-microvolt = <860000>;
+			regulator-max-microvolt = <1800000>;
+		};
+    };
+};
