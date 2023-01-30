@@ -87,8 +87,9 @@
 		regulator-name = "TSP_AVDD_3V3";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio 0 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
+		regulator-always-on;
+		/*gpio = <&gpio 70 GPIO_ACTIVE_HIGH>;
+		enable-active-high;*/
 	};
 };
 
@@ -126,22 +127,59 @@
 
 &bsc3 {
 	clock-frequency = <400000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&bsc3_pins>;
 	status = "okay";
+
+	accel@18 {
+		compatible = "bosch,bma254";
+		reg = <0x18>;
+
+		interrupt-parent = <&gpio>;
+		interrupts = <92 IRQ_TYPE_EDGE_RISING>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&acc_int>;
+
+		mount-matrix = "-1", "0", "0",
+			       "0", "-1", "0",
+			       "0", "0", "-1";
+		vdd-supply = <&tcxldo_reg>;
+		vddio-supply = <&iosr1_reg>;
+	};
+
+	proximity@44 {
+		compatible = "sharp,gp2ap002s00f";
+		reg = <0x44>;
+
+		interrupt-parent = <&gpio>;
+		interrupts = <89 IRQ_TYPE_EDGE_FALLING>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&proxi_int>;
+
+		vdd-supply = <&tcxldo_reg>; /* SENSOR_3.3V */
+		vio-supply = <&gpldo1_reg>; /* SENSOR_LED_3.3V */
+
+		sharp,proximity-far-hysteresis = /bits/ 8 <0x2f>;
+		sharp,proximity-close-hysteresis = /bits/ 8 <0x0c>;
+	};
 };
 
 &bsc4 {
-	clock-frequency = <230000>;
+	clock-frequency = <400000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&bsc4_pins>;
 	status = "okay";
 
 	/* Melfas MMS144 touchscreen, using the mms136 compatible for now */
 	touchscreen@48 {
 		compatible = "melfas,mms136";
 		reg = <0x48>;
+		clock-frequency = <230000>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&tsp_default>;
 		interrupt-parent = <&gpio>;
 		interrupts = <73 IRQ_TYPE_EDGE_FALLING>;
-		/* AVDD is "analog supply", 2.57-3.47 V */
-		avdd-supply = <&gpldo2_reg>; /* ??? this should be a fixed regulator but it keeps throwing a -517 (EPROBE_DEFER) if i set it to one. how do you even get a probe defer on an always-on fixed regulator??? */
-		/* VDD is "digital supply" 1.71-3.47V */
+		avdd-supply = <&tsp_avdd_3v3_reg>;
 		vdd-supply = <&gpldo2_reg>;
 		touchscreen-size-x = <480>;
 		touchscreen-size-y = <800>;
@@ -157,10 +195,41 @@
 	};
 };
 
+&pinctrl {
+	cd_pullup: cd-pullup {
+		pins = "spi0txd";
+		function = "alt5"; /* PF_GPIO91 */
+		bias-pull-up;
+	};
+
+	tsp_default: tsp-default {
+		pins = "mmc1dat5";
+		function = "alt5"; /* PF_GPIO73 */
+		bias-disable;
+		input;
+	};
+
+	acc_int: acc-int {
+		pins = "spi0rxd";
+		function = "alt5"; /* PF_GPIO92 */
+		bias-disable;
+		input;
+	};
+
+	proxi_int: proxi-int {
+		pins = "spi0fss";
+		function = "alt5"; /* PF_GPIO89 */
+		bias-disable;
+		input;
+	};
+};
+
 /* SD card */
 &sdio1 {
 	max-frequency = <48000000>;
 	cd-gpio = <&gpio 91 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&cd_pullup>, <&sdio1_pins>;
 	status = "okay";
 };
 
@@ -294,7 +363,7 @@
 		};
 
 		tcxldo_reg: tcxldo {
-			regulator-min-microvolt = <1300000>;
+			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
 		};
