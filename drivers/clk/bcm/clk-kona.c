@@ -966,12 +966,9 @@ static int selector_write(struct ccu_data *ccu, struct bcm_clk_gate *gate,
 static void kona_ccu_set_voltage(struct ccu_data *ccu, int voltage_reg_num,
 				u8 voltage_policy_id)
 {
-	unsigned long flags;
 	u32 offset;
 	u32 value;
 	u8 shift;
-
-	flags = ccu_lock(ccu);
 
 	if (voltage_reg_num <= 3) {
 		shift = voltage_reg_num << 3;
@@ -988,18 +985,13 @@ static void kona_ccu_set_voltage(struct ccu_data *ccu, int voltage_reg_num,
 		((voltage_policy_id & 0xF) << shift);
 
 	__ccu_write(ccu, offset, value);
-
-	ccu_unlock(ccu, flags);
 }
 
 static void kona_ccu_set_peri_voltage(struct ccu_data *ccu, u8 peri_volt_reg_num,
 				u8 peri_volt_policy_id)
 {
-	unsigned long flags;
 	u32 value;
 	u8 shift;
-
-	flags = ccu_lock(ccu);
 
 	shift = peri_volt_reg_num << 3;
 	value = __ccu_read(ccu, ccu->peri_volt.offset);
@@ -1007,18 +999,13 @@ static void kona_ccu_set_peri_voltage(struct ccu_data *ccu, u8 peri_volt_reg_num
 		((peri_volt_policy_id & 0xF) << shift);
 
 	__ccu_write(ccu, ccu->peri_volt.offset, value);
-
-	ccu_unlock(ccu, flags);
 }
 
 static void kona_ccu_set_freq_policy(struct ccu_data *ccu, u8 freq_policy_reg_num,
 				u8 freq_policy_policy_id)
 {
-	unsigned long flags;
 	u32 value;
 	u8 shift;
-
-	flags = ccu_lock(ccu);
 
 	shift = freq_policy_reg_num << 3;
 	value = __ccu_read(ccu, ccu->freq_policy.offset);
@@ -1026,8 +1013,6 @@ static void kona_ccu_set_freq_policy(struct ccu_data *ccu, u8 freq_policy_reg_nu
 		(freq_policy_policy_id << shift);
 
 	__ccu_write(ccu, ccu->freq_policy.offset, value);
-
-	ccu_unlock(ccu, flags);
 }
 
 /* Peripheral clock operations */
