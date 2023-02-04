@@ -1015,21 +1015,6 @@ static void kona_ccu_set_freq_policy(struct ccu_data *ccu, u8 freq_policy_reg_nu
 	__ccu_write(ccu, ccu->freq_policy.offset, value);
 }
 
-static void kona_ccu_int_enable(struct ccu_data *ccu, u8 int_type, bool enable)
-{
-	u32 value;
-
-	value = __ccu_read(ccu, ccu->interrupt.enable_offset);
-
-	/* int_type doubles as a shift value. */
-	if (enable)
-		value |= (1 << int_type);
-	else
-		value &= ~(1 << int_type);
-
-	__ccu_write(ccu, ccu->interrupt.enable_offset, value);
-}
-
 /* Peripheral clock operations */
 
 static int kona_peri_clk_enable(struct clk_hw *hw)
@@ -1347,19 +1332,22 @@ static bool __kona_clk_init(struct kona_clk *bcm_clk)
 	return false;
 }
 
-/* Sets up CCU value tables, such as voltage or frequency tables */
-static bool __ccu_init_values(struct ccu_data *ccu)
+/* Set a CCU and all its clocks into their desired initial state */
+bool __init kona_ccu_init(struct ccu_data *ccu)
 {
+	unsigned long flags;
 	unsigned int which;
+	struct kona_clk *kona_clks = ccu->kona_clks;
+	bool success = true;
+	u32 val;
+
+	flags = ccu_lock(ccu);
+	__ccu_write_enable(ccu);
+	if (!__ccu_policy_engine_stop(ccu))
+		pr_err("Could not stop policy engine");
 
 	/* Enable all policies */
 	if (ccu_policy_exists(&ccu->policy)) {
-		pr_info("init policy");
-		if (!__ccu_policy_engine_stop(ccu)) {
-			pr_err("Could not stop policy engine");
-			return false;
-		}
-
 		for (which = 0; which < CCU_POLICY_MAX; which++) {
 			if (ccu->policy.mask.mask1_offset != 0)
 				__ccu_write(ccu, ccu->policy.mask.mask1_offset + (4 * which),
@@ -1373,7 +1361,6 @@ static bool __ccu_init_values(struct ccu_data *ccu)
 
 	/* Set voltage from voltage tables */
 	if (ccu_voltage_exists(&ccu->voltage)) {
-		pr_info("init volt");
 		for (which = 0; which < ccu->voltage.voltage_table_len; which++) {
 			kona_ccu_set_voltage(ccu, which, ccu->voltage.voltage_table[which]);
 		}
@@ -1381,143 +1368,24 @@ static bool __ccu_init_values(struct ccu_data *ccu)
 
 	/* Set peripheral voltage from voltage tables */
 	if (ccu_peri_volt_exists(&ccu->peri_volt)) {
-		pr_info("init peri volt");
 		for (which = 0; which < ccu->peri_volt.peri_volt_table_len; which++) {
 			kona_ccu_set_peri_voltage(ccu, which,
 					ccu->peri_volt.peri_volt_table[which]);
 		}
 	}
 
-	/* Set frequency policy from frequency tables */
+	/* Set peripheral voltage from voltage tables */
 	if (ccu_freq_policy_exists(&ccu->freq_policy)) {
-		pr_info("init freq");
 		for (which = 0; which < ccu->freq_policy.freq_policy_table_len; which++) {
 			kona_ccu_set_freq_policy(ccu, which,
 					ccu->freq_policy.freq_policy_table[which]);
 		}
 	}
 
-	if (ccu_policy_exists(&ccu->policy)) {
-		pr_info("start policy engine");
-		__ccu_policy_engine_start(ccu, true);
-	}
-
-	/* Disable interrupts by default */
-	kona_ccu_int_enable(ccu, CCU_INT_ACT, false);
-	kona_ccu_int_enable(ccu, CCU_INT_TGT, false);
-
-	return true;
-}
-
-/*
- * Some CCUs have their own PLL clocks, which determine the rate of
- * the reference clocks. There are 2 PLL control registers in each CCU.
- */
-static int ccu_set_pll_pwr_on_idle(struct ccu_data *ccu, int pll_id,
-					bool enable)
-{
-	u32 offset;
-	u32 val;
-
-	switch (pll_id) {
-	case 0:
-		offset = 0x0C00;
-		break;
-	case 1:
-		offset = 0x0C30;
-		break;
-	default:
-		return -EINVAL;
-	}
-
-	val = __ccu_read(ccu, offset);
-	if (enable)
-		val |= 0x0010; /* IDLE_PWRDWN_SW_OVERRIDE */
-	else
-		val &= ~0x0010;
-	__ccu_write(ccu, offset, val);
-
-	return 0;
-}
-
-static int ccu_set_crystal_pwr_on_idle(struct ccu_data *ccu, bool enable)
-{
-	u32 val;
-
-	val = __ccu_read(ccu, 0x0C60);
-	if (enable)
-		val |= 0x08000000;
-	else
-		val &= ~0x08000000;
-	__ccu_write(ccu, 0x0C60, val);
-
-	return 0;
-}
-
-/*
- * BCM21664 ROOT CCU requires a separate initialization process which is
- * done in this function.
- */
-static int __root_ccu_init_values(struct ccu_data *ccu)
-{
-	u32 val;
-
-	ccu_set_pll_pwr_on_idle(ccu, 0, true);
-	ccu_set_pll_pwr_on_idle(ccu, 1, true);
-	ccu_set_crystal_pwr_on_idle(ccu, true);
-
-	val = __ccu_read(ccu, 0x0218); /* ROOT_CLK_MGR_REG_DIG_CLKGATE_OFFSET */
-	val &= ~(0x01 | 0x04); /* ROOT_CLK_MGR_REG_DIG_CLKGATE_DIGITAL_CH(0|1)_CLK_EN_MASK */
-	__ccu_write(ccu, 0x0218, val);
-
-	/* Reset 8-phase de-glitch enable bit */
-	val = __ccu_read(ccu, 0x0C48); /* ROOT_CLK_MGR_REG_PLL1CTRL3_OFFSET */
-	val &= ~0x00400000; /* ROOT_CLK_MGR_REG_PLL1CTRL3_PLL1_8PHASE_EN_DEGLITCH_EN_MASK */
-	__ccu_write(ccu, 0x0C48, val);
-
-	/* Initialize PLL1 offset */
-	__ccu_write(ccu, 0x0C54, 0xBFFFF); /* ROOT_CLK_MGR_REG_PLL1_OFFSET_OFFSET, PLL1_OFFSET_CONFIG */
-
-	/* Fix VAR500M freeze erratum */
-	val = __ccu_read(ccu, 0x0E14); /* ROOT_CLK_MGR_REG_VARVDD_CLKEN_OVERRIDE_OFFSET */
-	val |= 0x0080; /* ROOT_CLK_MGR_REG_VARVDD_CLKEN_OVERRIDE_VAR_500M_VARVDD_SW_EN_MASK */
-	__ccu_write(ccu, 0x0E14, val);
-
-	return 0;
-}
-
-/* Set a CCU and all its clocks into their desired initial state */
-bool __init kona_ccu_init(struct ccu_data *ccu)
-{
-	unsigned long flags;
-	unsigned int which;
-	struct kona_clk *kona_clks = ccu->kona_clks;
-	bool success = true;
-	u32 val;
-
-	pr_info("clk-kona: initializing %s", ccu->name);
-
-	flags = ccu_lock(ccu);
-	__ccu_write_enable(ccu);
-
-	/* Disable A7 PLL auto power down */
-	if (!strcmp(ccu->name, "proc_ccu")) {
-		pr_info("need a7 pll auto power down disable");
-		val = __ccu_read(ccu, 0x0C00);
-		val &= 0x0010;
-		__ccu_write(ccu, 0x0C00, val);
-	}
-
-	/* BCM21664 ROOT CCU has a custom initialization function, so we check
-	 * for it specifically here. */
-	if (!strcmp(ccu->name, "root_ccu"))
-		__root_ccu_init_values(ccu);
-	else
-		__ccu_init_values(ccu);
+	__ccu_policy_engine_start(ccu, true);
 
 	/* Initialize clocks */
 	for (which = 0; which < ccu->clk_num; which++) {
-		pr_info("%d", which);
 		struct kona_clk *bcm_clk = &kona_clks[which];
 
 		if (!bcm_clk->ccu)
@@ -1533,9 +1401,9 @@ bool __init kona_ccu_init(struct ccu_data *ccu)
 		val = __ccu_read(ccu, 0x0C3C);
 		val |= 0x00800000;
 		__ccu_write(ccu, 0x0C3C, val);
-	} else
-		__ccu_write_disable(ccu);
+	}
 
+	__ccu_write_disable(ccu);
 	ccu_unlock(ccu, flags);
 	return success;
 }

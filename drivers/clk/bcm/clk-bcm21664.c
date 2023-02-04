@@ -10,47 +10,6 @@
 #define BCM21664_CCU_COMMON(_name, _capname) \
 	KONA_CCU_COMMON(BCM21664, _name, _capname)
 
-/* Proc CCU */
-
-#define BCM21664_PROC_CCU_CLOCK_COUNT 0
-
-static struct ccu_data proc_ccu_data = {
-	BCM21664_CCU_COMMON(proc, PROC),
-   .policy		= {
-		.enable		= CCU_LVM_EN(0x0034, 0),
-		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
-		.mask		= CCU_POLICY_MASK(0x0010, 0),
-	},
-	.voltage	= {
-		CCU_VOLTAGE_OFFSET(0x0040, 0x0044),
-		.voltage_table = {
-			CCU_VOLTAGE_A9_ECO,
-			CCU_VOLTAGE_A9_ECO,
-			CCU_VOLTAGE_A9_ECO,
-			CCU_VOLTAGE_A9_ECO,
-			CCU_VOLTAGE_A9_TURBO,
-			CCU_VOLTAGE_A9_NORMAL,
-			CCU_VOLTAGE_A9_TURBO,
-			CCU_VOLTAGE_A9_SUPER_TURBO,
-		},
-		.voltage_table_len = 8,
-	},
-	.freq_policy	= {
-		.offset = 0x0008,
-		.freq_policy_table = {
-			4, 4, 4, 7 /* ECO, ECO, ECO, SUPER_TURBO */
-		},
-		.freq_policy_table_len = 4,
-	},
-	.interrupt		= {
-		.enable_offset = 0x0020,
-		.status_offset = 0x0024,
-	},
-	.kona_clks	= {
-		[0] = LAST_KONA_CLK,
-	},
-};
-
 /* Root CCU */
 
 static struct clk_reg_data frac_1m_data = {
@@ -128,10 +87,6 @@ static struct ccu_data aon_ccu_data = {
 			2, 2, 2, 2 /* ECO, ECO, NORMAL, NORMAL */
 		},
 		.freq_policy_table_len = 4,
-	},
-	.interrupt		= {
-		.enable_offset = 0x0020,
-		.status_offset = 0x0024,
 	},
 	.kona_clks	= {
 		[BCM21664_AON_CCU_HUB_TIMER] =
@@ -270,10 +225,6 @@ static struct ccu_data master_ccu_data = {
 		},
 		.freq_policy_table_len = 4,
 	},
-	.interrupt		= {
-		.enable_offset = 0x0020,
-		.status_offset = 0x0024,
-	},
 	.kona_clks	= {
 		[BCM21664_MASTER_CCU_SDIO1_AHB] =
 			KONA_CLK(master, sdio1_ahb, bus),
@@ -411,7 +362,7 @@ static struct clk_reg_data bsc4_data = {
 
 static struct ccu_data slave_ccu_data = {
 	BCM21664_CCU_COMMON(slave, SLAVE),
-   .policy		= {
+       .policy		= {
 		.enable		= CCU_LVM_EN(0x0034, 0),
 		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
 		.mask		= CCU_POLICY_MASK(0x0010, 0),
@@ -442,10 +393,6 @@ static struct ccu_data slave_ccu_data = {
 			3, 3, 3, 3 /* ECO, ECO, NORMAL, NORMAL */
 		},
 		.freq_policy_table_len = 4,
-	},
-	.interrupt		= {
-		.enable_offset = 0x0020,
-		.status_offset = 0x0024,
 	},
 	.kona_clks	= {
 		[BCM21664_SLAVE_CCU_UARTB_APB] =
@@ -482,11 +429,6 @@ static struct ccu_data slave_ccu_data = {
 
 /* Device tree match table callback functions */
 
-static void __init kona_dt_proc_ccu_setup(struct device_node *node)
-{
-	kona_dt_ccu_setup(&proc_ccu_data, node);
-}
-
 static void __init kona_dt_root_ccu_setup(struct device_node *node)
 {
 	kona_dt_ccu_setup(&root_ccu_data, node);
@@ -507,8 +449,6 @@ static void __init kona_dt_slave_ccu_setup(struct device_node *node)
 	kona_dt_ccu_setup(&slave_ccu_data, node);
 }
 
-CLK_OF_DECLARE(bcm21664_proc_ccu, BCM21664_DT_PROC_CCU_COMPAT,
-			kona_dt_proc_ccu_setup);
 CLK_OF_DECLARE(bcm21664_root_ccu, BCM21664_DT_ROOT_CCU_COMPAT,
 			kona_dt_root_ccu_setup);
 CLK_OF_DECLARE(bcm21664_aon_ccu, BCM21664_DT_AON_CCU_COMPAT,
