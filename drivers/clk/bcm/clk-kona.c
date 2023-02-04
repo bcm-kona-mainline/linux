@@ -1343,8 +1343,10 @@ bool __init kona_ccu_init(struct ccu_data *ccu)
 
 	flags = ccu_lock(ccu);
 	__ccu_write_enable(ccu);
-	if (!__ccu_policy_engine_stop(ccu))
-		pr_err("Could not stop policy engine");
+	if (ccu_policy_exists(&ccu->policy)) {
+		if (!__ccu_policy_engine_stop(ccu))
+			pr_err("Could not stop policy engine");
+	}
 
 	/* Enable all policies */
 	if (ccu_policy_exists(&ccu->policy)) {
@@ -1382,7 +1384,9 @@ bool __init kona_ccu_init(struct ccu_data *ccu)
 		}
 	}
 
-	__ccu_policy_engine_start(ccu, true);
+	if (ccu_policy_exists(&ccu->policy)) {
+		__ccu_policy_engine_start(ccu, true);
+	}
 
 	/* Initialize clocks */
 	for (which = 0; which < ccu->clk_num; which++) {
