@@ -41,6 +41,7 @@
 #define ccu_voltage_exists(ccu_voltage)	((ccu_voltage)->offset1 != 0)
 #define ccu_peri_volt_exists(ccu_peri_volt)	((ccu_peri_volt)->offset != 0)
 #define ccu_freq_policy_exists(ccu_freq_policy)	((ccu_freq_policy)->offset != 0)
+#define ccu_interrupt_exists(ccu_interrupt)	((ccu_interrupt)->en_offset != 0)
 
 /* Clock field state tests */
 
@@ -530,6 +531,15 @@ struct ccu_freq_policy {
 	size_t freq_policy_table_len;
 };
 
+/* CCU interrupt bits */
+#define CCU_INT_TGT		0
+#define CCU_INT_ACT		1
+
+struct ccu_interrupt {
+	u32 enable_offset;
+	u32 status_offset;
+};
+
 /*
  * Each CCU defines a mapped area of memory containing registers
  * used to manage clocks implemented by the CCU.  Access to memory
@@ -547,6 +557,7 @@ struct ccu_data {
 	struct ccu_voltage voltage;
 	struct ccu_peri_volt peri_volt;
 	struct ccu_freq_policy freq_policy;
+	struct ccu_interrupt interrupt;
 	struct device_node *node;
 	size_t clk_num;
 	const char *name;

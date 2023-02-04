@@ -1015,6 +1015,22 @@ static void kona_ccu_set_freq_policy(struct ccu_data *ccu, u8 freq_policy_reg_nu
 	__ccu_write(ccu, ccu->freq_policy.offset, value);
 }
 
+static void kona_ccu_interrupt_enable(struct ccu_data *ccu, u8 int_type,
+				bool enable)
+{
+	u32 value;
+
+	value = __ccu_read(ccu, ccu->interrupt.enable_offset);
+
+	/* int_type doubles as a shift value. */
+	if (enable)
+		value |= (1 << int_type);
+	else
+		value &= ~(1 << int_type);
+
+	__ccu_write(ccu, ccu->interrupt.enable_offset, value);
+}
+
 /* Peripheral clock operations */
 
 static int kona_peri_clk_enable(struct clk_hw *hw)
@@ -1387,6 +1403,10 @@ bool __init kona_ccu_init(struct ccu_data *ccu)
 	if (ccu_policy_exists(&ccu->policy)) {
 		__ccu_policy_engine_start(ccu, true);
 	}
+
+	/* Disable interrupts by default */
+	kona_ccu_interrupt_enable(ccu, CCU_INT_ACT, false);
+	kona_ccu_interrupt_enable(ccu, CCU_INT_TGT, false);
 
 	/* Initialize clocks */
 	for (which = 0; which < ccu->clk_num; which++) {
