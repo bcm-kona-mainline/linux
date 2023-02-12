@@ -10,8 +10,6 @@
 #include <linux/io.h>
 #include <linux/kernel.h>
 #include <linux/clk-provider.h>
-#include <linux/clk.h>
-#include <linux/math64.h>
 
 /*
  * "Policies" affect the frequencies of bus clocks provided by a
