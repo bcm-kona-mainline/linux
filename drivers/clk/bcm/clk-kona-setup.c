@@ -176,8 +176,7 @@ static bool bus_clk_reg_data_offsets_valid(struct kona_clk *bcm_clk)
 	u32 range;
 	u32 limit;
 
-	/* We re-use this function for both bus and core clocks */
-	BUG_ON(bcm_clk->type != bcm_clk_bus && bcm_clk->type != bcm_clk_core);
+	BUG_ON(bcm_clk->type != bcm_clk_bus);
 	bus = bcm_clk->u.reg_data;
 	name = bcm_clk->init_data.name;
 	range = bcm_clk->ccu->range;
@@ -532,8 +531,7 @@ bus_clk_reg_data_valid(struct kona_clk *bcm_clk)
 	struct bcm_clk_hyst *hyst;
 	const char *name;
 
-	/* We re-use this function for both bus and core clocks */
-	BUG_ON(bcm_clk->type != bcm_clk_bus && bcm_clk->type != bcm_clk_core);
+	BUG_ON(bcm_clk->type != bcm_clk_bus);
 
 	/*
 	 * First validate register offsets.  This is the only place
@@ -649,18 +647,12 @@ static bool kona_clk_valid(struct kona_clk *bcm_clk)
 		if (!bus_clk_reg_data_valid(bcm_clk))
 			return false;
 		break;
-	case bcm_clk_core:
-		if (!bus_clk_reg_data_valid(bcm_clk))
-			return false;
-		break;
 	case bcm_clk_peri:
 		if (!peri_clk_reg_data_valid(bcm_clk))
 			return false;
 		break;
 	case bcm_clk_pll:
 		if (!pll_clk_reg_data_valid(bcm_clk))
-			return false;
-		break;
 	default:
 		pr_err("%s: unrecognized clock type (%d)\n", __func__,
 			(int)bcm_clk->type);
@@ -883,9 +875,6 @@ static void bcm_clk_teardown(struct kona_clk *bcm_clk)
 	case bcm_clk_bus:
 		bus_clk_teardown(bcm_clk->u.data, &bcm_clk->init_data);
 		break;
-	case bcm_clk_core:
-		bus_clk_teardown(bcm_clk->u.data, &bcm_clk->init_data);
-		break;
 	case bcm_clk_peri:
 		peri_clk_teardown(bcm_clk->u.data, &bcm_clk->init_data);
 		break;
@@ -919,11 +908,6 @@ static int kona_clk_setup(struct kona_clk *bcm_clk)
 
 	switch (bcm_clk->type) {
 	case bcm_clk_bus:
-		ret = bus_clk_setup(bcm_clk->u.data, init_data);
-		if (ret)
-			return ret;
-		break;
-	case bcm_clk_core:
 		ret = bus_clk_setup(bcm_clk->u.data, init_data);
 		if (ret)
 			return ret;

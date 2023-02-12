@@ -1316,16 +1316,6 @@ struct clk_ops kona_bus_clk_ops = {
 	.is_enabled = kona_peri_clk_is_enabled,
 };
 
-/*
- * Core clock operations. These are largely the same as bus clocks.
- */
-
-struct clk_ops kona_core_clk_ops = {
-	.enable = kona_peri_clk_enable,
-	.disable = kona_peri_clk_disable,
-	.is_enabled = kona_peri_clk_is_enabled,
-};
-
 /* Put a bus clock into its initial state */
 static bool __bus_clk_init(struct kona_clk *bcm_clk)
 {
@@ -1333,14 +1323,8 @@ static bool __bus_clk_init(struct kona_clk *bcm_clk)
 	struct clk_reg_data *bus = bcm_clk->u.reg_data;
 	const char *name = bcm_clk->init_data.name;
 
-	/* Core clocks are nearly identical to bus clocks, re-use the function */
-	BUG_ON(bcm_clk->type != bcm_clk_bus && bcm_clk->type != bcm_clk_core);
+	BUG_ON(bcm_clk->type != bcm_clk_bus);
 
-	if (!policy_init(ccu, &bus->policy)) {
-		pr_err("%s: error initializing policy for %s\n",
-			__func__, name);
-		return false;
-	}
 	if (!gate_init(ccu, &bus->gate)) {
 		pr_err("%s: error initializing gate for %s\n", __func__, name);
 		return false;
@@ -1770,8 +1754,6 @@ static bool __kona_clk_init(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
 	case bcm_clk_bus:
-		return __bus_clk_init(bcm_clk);
-	case bcm_clk_core:
 		return __bus_clk_init(bcm_clk);
 	case bcm_clk_peri:
 		return __peri_clk_init(bcm_clk);
