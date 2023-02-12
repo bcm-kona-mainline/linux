@@ -653,6 +653,8 @@ static bool kona_clk_valid(struct kona_clk *bcm_clk)
 		break;
 	case bcm_clk_pll:
 		if (!pll_clk_reg_data_valid(bcm_clk))
+			return false;
+		break;
 	default:
 		pr_err("%s: unrecognized clock type (%d)\n", __func__,
 			(int)bcm_clk->type);
