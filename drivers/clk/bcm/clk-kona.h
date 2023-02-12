@@ -16,6 +16,7 @@
 #include <linux/clk-provider.h>
 
 #define	BILLION		1000000000
+#define FREQ_MHZ(x) ((x)*1000*1000)
 
 /* The common clock framework uses u8 to represent a parent index */
 #define PARENT_COUNT_MAX	((u32)U8_MAX)
@@ -69,12 +70,35 @@
 #define policy_lvm_en_exists(enable)	((enable)->offset != 0)
 #define policy_ctl_exists(control)	((control)->offset != 0)
 
+/* PLL clock field state tests */
+
+#define pll_is_autogated(pll)		FLAG_TEST(pll, PLL, AUTOGATE)
+#define pll_has_delayed_lock(pll)	FLAG_TEST(pll, PLL, DELAYED_LOCK)
+
+#define pll_cfg_exists(pll_cfg)		((pll_cfg)->offset != 0)
+
+#define desense_exists(desense)		((desense)->offset != 0)
+#define desense_flag_enable(desense)	FLAG_TEST(desense, PLL_DESENSE, ENABLE)
+#define desense_ctrl_ndiv(desense)	FLAG_TEST(desense, PLL_DESENSE, NDIV)
+#define desense_ctrl_nfrac(desense)	FLAG_TEST(desense, PLL_DESENSE, NFRAC)
+
+#define pwrdwn_exists(pwrdwn)			((pwrdwn)->offset != 0)
+#define pwrdwn_has_idle_override(pwrdwn)	((pwrdwn)->idle_pwrdwn_override_bit != 0)
+
+#define reset_exists(reset)		((reset)->offset != 0)
+#define lock_exists(lock)		((lock)->offset != 0)
+
+#define pdiv_exists(pdiv)		((pdiv)->offset != 0)
+#define ndiv_exists(ndiv)		((ndiv)->offset != 0)
+#define nfrac_exists(nfrac)		((nfrac)->offset != 0)
+
 /* Clock type, used to tell common block what it's part of */
 enum bcm_clk_type {
 	bcm_clk_none,		/* undefined clock type */
 	bcm_clk_bus,
 	bcm_clk_core,
-	bcm_clk_peri
+	bcm_clk_peri,
+	bcm_clk_pll
 };
 
 /*
@@ -397,6 +421,206 @@ struct clk_reg_data {
 #define CLOCKS(...)	{ __VA_ARGS__, NULL, }
 #define NO_CLOCKS	{ NULL, }	/* Must use of no parent clocks */
 
+/* PLL clock reg data */
+
+/*
+ * PLL clock config register data.
+ *
+ * The layout and set bits differ between PLLs, but they're responsible
+ * for controlling different settings. The driver chooses the config value
+ * to write based on the passed frequency threshold, and it is applied when
+ * setting the clock rate.
+ */
+struct bcm_pll_cfg {
+	u32 offset;
+	u32 shift;
+	u32 width;
+
+	u32 tholds[8];		/* thresholds */
+	u32 cfg_values[8];	/* config values */
+	u32 n_tholds;		/* number of thresholds == number of configs */
+};
+
+/* PLL config offset initialization macro. */
+#define PLL_CFG_OFFSET(_offset, _shift, _width)				\
+	.offset = (_offset),						\
+	.shift = (_shift),						\
+	.width = (_width)
+
+#define PLL_CFG_THOLD_MAX		0xFFFFFFFF
+
+/*
+ * PLL clocks can have an offset for desense mitigation. This offset is stored
+ * in the pll_offset register, and is applied to either the ndiv, ndiv_frac or
+ * both.
+ */
+struct bcm_pll_desense {
+	u32 offset;
+	int delta;
+	u32 flags;
+};
+
+/* PLL offset register offsets. These are platform-defined for all clocks. */
+#define PLL_OFFSET_MODE_MASK			BIT(28)
+#define PLL_OFFSET_NDIV_SHIFT			20
+#define PLL_OFFSET_NDIV_WIDTH			9
+#define PLL_OFFSET_NFRAC_SHIFT			0
+#define PLL_OFFSET_NFRAC_WIDTH			20
+
+/* PLL desense flags. */
+#define BCM_CLK_PLL_DESENSE_FLAGS_ENABLE	((u32)1 << 0)	/* Desense must be enabled */
+#define BCM_CLK_PLL_DESENSE_FLAGS_NDIV		((u32)1 << 1)	/* Apply offset to ndiv */
+#define BCM_CLK_PLL_DESENSE_FLAGS_NFRAC		((u32)1 << 2)	/* Apply offset to ndiv_frac */
+
+/* PLL desense for ndiv only */
+#define PLL_DESENSE_NDIV(_offset, _delta)				\
+	{								\
+		.offset = (_offset),					\
+		.delta = (_delta),					\
+		.flags = FLAG(PLL_DESENSE, ENABLE)|			\
+			FLAG(PLL_DESENSE, NDIV), 			\
+	}
+
+/* PLL desense for ndiv_frac only */
+#define PLL_DESENSE_NFRAC(_offset, _delta)				\
+	{								\
+		.offset = (_offset),					\
+		.delta = (_delta),					\
+		.flags = FLAG(PLL_DESENSE, ENABLE)|			\
+			FLAG(PLL_DESENSE, NFRAC), 			\
+	}
+
+
+/* PLL desense for both ndiv and ndiv_frac */
+#define PLL_DESENSE_BOTH(_offset, _delta)				\
+	{								\
+		.offset = (_offset),					\
+		.delta = (_delta),					\
+		.flags = FLAG(PLL_DESENSE, ENABLE)|			\
+			FLAG(PLL_DESENSE, NDIV)|			\
+			FLAG(PLL_DESENSE, NFRAC),			\
+	}
+
+/*
+ * PLL clock power-down register data.
+ *
+ * Auto-gated PLL clocks are enabled by setting the idle powerdown override
+ * bit (the powerdown is otherwise managed by the hardware)
+ * Non-auto-gated PLL clocks are enabled by clearing the power-down bit,
+ * and disabled by setting it.
+ */
+struct bcm_pll_pwrdwn {
+	u32 offset;
+	u32 pwrdwn_bit;
+	u32 idle_pwrdwn_override_bit;
+};
+
+/* Power-down initialization macro */
+#define PLL_PWRDWN(_offset, _pwrdwn_bit, _idle_pwrdwn_override_bit)	\
+	{								\
+		.offset = (_offset),					\
+		.pwrdwn_bit = (_pwrdwn_bit),				\
+		.idle_pwrdwn_override_bit = (_idle_pwrdwn_override_bit),\
+	}
+
+/* PLL clock reset register data. */
+struct bcm_pll_reset {
+	u32 offset;
+	u32 reset_bit;
+	u32 post_reset_bit;
+};
+
+/* Reset initialization macro */
+#define PLL_RESET(_offset, _reset_bit, _post_reset_bit)			\
+	{								\
+		.offset = (_offset),					\
+		.reset_bit = (_reset_bit),				\
+		.post_reset_bit = (_post_reset_bit),			\
+	}
+
+/*
+ * PLL clock lock register data. After a reset, the code must wait until the
+ * lock bit is unset.
+ */
+struct bcm_pll_lock {
+	u32 offset;
+	u32 lock_bit;
+};
+
+/* Lock initialization macro */
+#define PLL_LOCK(_offset, _lock_bit)					\
+	{								\
+		.offset = (_offset),					\
+		.lock_bit = (_lock_bit),				\
+	}
+
+/*
+ * PLL clock rate is calculated using the following formula:
+ *
+ *   (xtal * (ndiv_int * frac_div + ndiv_frac)) / (pdiv * frac_div)
+ *
+ * where:
+ *  xtal              - crystal, 26MHz
+ *  ndiv_int (ndiv)   - divider integer
+ *  ndiv_frac (nfrac) - divider fraction
+ *  pdiv              - pre-divider
+ *  frac_div          - fractional divider
+ *
+ * frac_div is usually 1 + (ndiv_frac mask >> ndiv_frac shift).
+ */
+
+struct bcm_pll_nfrac {
+	u32 offset;
+	u32 shift;
+	u32 width;
+};
+
+/* Divider fraction initialization macro */
+#define PLL_NFRAC(_offset, _shift, _width)				\
+	{								\
+		.offset = (_offset),					\
+		.shift = (_shift),					\
+		.width = (_width),					\
+	}
+
+/*
+ * Common struct used for pre-divider (pdiv) and divider integer (ndiv) regs.
+ */
+struct bcm_pll_div {
+	u32 offset;
+	u32 shift;
+	u32 width;
+};
+
+/* PLL divider initialization macro */
+#define PLL_DIV(_offset, _shift, _width)				\
+	{								\
+		.offset = (_offset),					\
+		.shift = (_shift),				\
+		.width = (_width),				\
+	}
+
+/* PLL clock flags. */
+#define BCM_CLK_PLL_FLAGS_AUTOGATE		((u32)1 << 0) /* PLL clock is autogated */
+#define BCM_CLK_PLL_FLAGS_DELAYED_LOCK		((u32)1 << 1) /* PLL lock might be delayed */
+
+/* PLL clock data */
+struct pll_reg_data {
+	struct bcm_pll_cfg cfg;
+	struct bcm_pll_desense desense;
+	struct bcm_pll_pwrdwn pwrdwn;
+	struct bcm_pll_reset reset;
+	struct bcm_pll_lock lock;
+
+	struct bcm_pll_div pdiv;
+	struct bcm_pll_div ndiv;
+	struct bcm_pll_nfrac nfrac;
+
+	u32 flags;
+
+	unsigned long xtal_rate; /* rate of crystal used for rate calculations */
+};
+
 struct kona_clk {
 	struct clk_hw hw;
 	struct clk_init_data init_data;	/* includes name of this clock */
@@ -405,6 +629,7 @@ struct kona_clk {
 	union {
 		void *data;
 		struct clk_reg_data *reg_data;
+		struct pll_reg_data *pll_reg_data;
 	} u;
 };
 #define to_kona_clk(_hw) \
@@ -576,6 +801,7 @@ struct ccu_data {
 extern struct clk_ops kona_bus_clk_ops;
 extern struct clk_ops kona_core_clk_ops;
 extern struct clk_ops kona_peri_clk_ops;
+extern struct clk_ops kona_pll_clk_ops;
 
 /* Externally visible functions */
 

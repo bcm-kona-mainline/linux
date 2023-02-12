@@ -10,6 +10,8 @@
 #include <linux/io.h>
 #include <linux/kernel.h>
 #include <linux/clk-provider.h>
+#include <linux/clk.h>
+#include <linux/math64.h>
 
 /*
  * "Policies" affect the frequencies of bus clocks provided by a
@@ -1351,6 +1353,419 @@ static bool __bus_clk_init(struct kona_clk *bcm_clk)
 	return true;
 }
 
+/* PLL clock operations */
+
+/* Reset PLL clock and wait for it to unlock. */
+static int pll_reset(struct ccu_data *ccu, struct pll_reg_data *pll)
+{
+	struct bcm_pll_reset *reset = &pll->reset;
+	int ret = 0;
+	u32 reg_val;
+	u32 i;
+
+	__ccu_write_enable(ccu);
+
+	/* Set post_reset and reset bits at reset offset */
+	reg_val = __ccu_read(ccu, reset->offset);
+	reg_val |= reset->post_reset_bit | reset->reset_bit;
+	__ccu_write(ccu, reset->offset, reg_val);
+
+	/* If the clock is autogated or enabled, wait for unlock */
+	reg_val = __ccu_read(ccu, pll->pwrdwn.offset);
+	if (pll_is_autogated(pll) || (reg_val & (1 << pll->pwrdwn.pwrdwn_bit)) == 0) {
+		i = 0;
+		do {
+			udelay(1);
+			reg_val = __ccu_read(ccu, pll->lock.offset);
+			i++;
+		} while (!(reg_val & (1 << pll->lock.lock_bit) && i < 1000));
+
+		if (i >= 1000 && !pll_has_delayed_lock(pll))
+			ret = -EINVAL;
+	}
+
+	__ccu_write_disable(ccu);
+
+	return ret;
+}
+
+/* Calculate the rate of the clock based on the provided divider values. */
+static unsigned long
+compute_pll_rate(struct kona_clk *clk, u32 pdiv, u32 ndiv, u32 nfrac,
+		 u32 frac_div)
+{
+	struct pll_reg_data *pll = clk->u.pll_reg_data;
+	unsigned long xtal_rate = pll->xtal_rate;
+	u64 rate;
+
+	rate = (u64)xtal_rate * (u64)(ndiv * frac_div + nfrac);
+	do_div(rate, pdiv * frac_div);
+
+	return (unsigned long)rate;
+}
+
+/*
+ * Calculate the divider values required to get the new rate, and rounds
+ * down the provided rate to match.
+ *
+ * Returns the rounded down rate, sets pdiv, ndiv and nfrac to the
+ * provided pointers.
+ */
+static unsigned long
+compute_pll_divs(struct kona_clk *clk, unsigned long rate, u32 *pdiv_ptr,
+		 u32 *ndiv_ptr, u32 *nfrac_ptr)
+{
+	struct pll_reg_data *pll = clk->u.pll_reg_data;
+	unsigned long xtal_rate = pll->xtal_rate;
+	unsigned long calc_rate;
+	u32 max_ndiv = 1 << pll->ndiv.width;
+	unsigned long tmp1;
+	u64 temp_frac;
+
+	u32 frac_div = 1 + (bitfield_mask(pll->nfrac.shift, pll->nfrac.width) \
+			    >> pll->nfrac.shift);
+	u32 ndiv, nfrac;
+	u32 pdiv = 1;
+
+	ndiv = rate / xtal_rate;
+	if (ndiv > max_ndiv)
+		ndiv = max_ndiv;
+
+	temp_frac = ((u64)rate - (u64)ndiv * xtal_rate) * frac_div;
+	do_div(temp_frac, xtal_rate);
+
+	nfrac = (u32)temp_frac;
+	nfrac &= (frac_div - 1);
+
+	calc_rate = compute_pll_rate(clk, pdiv, ndiv, nfrac, frac_div);
+	if (calc_rate == rate)
+		goto done;
+
+	for (; nfrac < frac_div; nfrac++) {
+		calc_rate = compute_pll_rate(clk, pdiv, ndiv, nfrac,
+						frac_div);
+
+		if (calc_rate > rate) {
+			tmp1 = compute_pll_rate(clk, pdiv, ndiv,
+					nfrac - 1, frac_div);
+			if (abs(calc_rate - rate) > abs(rate - tmp1))
+				nfrac--;
+			break;
+		};
+	}
+	calc_rate = compute_pll_rate(clk, pdiv, ndiv, nfrac,
+					frac_div);
+done:
+	if (ndiv == max_ndiv)
+		ndiv = 0;
+
+	if (ndiv_ptr)
+		*ndiv_ptr = ndiv;
+	if (nfrac_ptr)
+		*nfrac_ptr = nfrac;
+	if (pdiv_ptr)
+		*pdiv_ptr = pdiv;
+
+	return calc_rate;
+}
+
+/* Set the PLL clock offset with values from the desense struct. */
+static int desense_set_offset(struct kona_clk *clk, int offset)
+{
+	struct pll_reg_data *pll = clk->u.pll_reg_data;
+	struct bcm_pll_desense *desense = &pll->desense;
+	struct ccu_data *ccu = clk->ccu;
+	unsigned long curr_rate, new_rate;
+	int offset_rate;
+	u32 ndiv_off, nfrac_off;
+	u32 ndiv, nfrac;
+	u32 pll_offset_val;
+
+	if (!desense_flag_enable(desense))
+		return 0;
+
+	curr_rate = clk_hw_get_rate(&clk->hw);
+	offset_rate = curr_rate + offset;
+
+	new_rate = compute_pll_divs(clk, offset_rate, NULL, &ndiv_off,
+				      &nfrac_off);
+
+	if (abs(new_rate - offset_rate) > 100) {
+		pr_err("%s: offset %u not supported for rate %lu",
+		       __func__, offset, curr_rate);
+		return -EINVAL;
+	}
+
+	ndiv = bitfield_extract(__ccu_read(ccu, pll->ndiv.offset),
+				pll->ndiv.shift, pll->ndiv.width);
+	nfrac = bitfield_extract(__ccu_read(ccu, pll->nfrac.offset),
+				pll->nfrac.shift, pll->nfrac.width);
+
+	pll_offset_val = __ccu_read(ccu, desense->offset);
+
+	if (desense_ctrl_ndiv(desense)) {
+		pll_offset_val = bitfield_replace(pll_offset_val,
+				PLL_OFFSET_NDIV_SHIFT, PLL_OFFSET_NDIV_WIDTH,
+				ndiv_off);
+	} else if (ndiv != ndiv_off) {
+		pr_err("%s: ndiv != ndiv_off, but divider does not handle ndiv",
+			__func__);
+		return -EINVAL;
+	}
+
+	if (desense_ctrl_nfrac(desense)) {
+		pll_offset_val = bitfield_replace(pll_offset_val,
+				PLL_OFFSET_NFRAC_SHIFT, PLL_OFFSET_NFRAC_WIDTH,
+				nfrac_off);
+	} else if (nfrac != nfrac_off) {
+		pr_err("%s: nfrac != nfrac_off, but divider does not handle nfrac",
+			__func__);
+		return -EINVAL;
+	}
+
+	__ccu_write(ccu, desense->offset, pll_offset_val);
+
+	return 0;
+}
+
+/* Initialize the desense offset registers. */
+static int desense_init(struct kona_clk *clk)
+{
+	struct pll_reg_data *pll = clk->u.pll_reg_data;
+	struct bcm_pll_desense *desense = &pll->desense;
+	struct ccu_data *ccu = clk->ccu;
+	u32 reg_val;
+
+	/*
+	 * Set PLL desense offset mode; this is either software (1) or
+	 * hardware (0).
+	 */
+	reg_val = __ccu_read(ccu, desense->offset);
+
+	if (desense_flag_enable(desense))
+		reg_val |= PLL_OFFSET_MODE_MASK;
+	else
+		reg_val &= ~PLL_OFFSET_MODE_MASK;
+
+	__ccu_write(ccu, desense->offset, reg_val);
+
+	/* Set PLL offset */
+	if (desense_flag_enable(desense)) {
+		if (desense_set_offset(clk, desense->delta)) {
+			pr_err("%s: failed to set desense offset delta %d\n",
+				__func__, desense->delta);
+			return -EIO;
+		}
+	}
+
+	return 0;
+}
+
+static int kona_pll_clk_enable(struct clk_hw *hw)
+{
+	struct kona_clk *bcm_clk = to_kona_clk(hw);
+	struct pll_reg_data *pll = bcm_clk->u.pll_reg_data;
+	struct bcm_pll_pwrdwn *pwrdwn = &pll->pwrdwn;
+	struct ccu_data *ccu = bcm_clk->ccu;
+	u32 reg_val;
+
+	/* For autogated clocks, we don't control the enable/disable */
+	if (pll_is_autogated(pll))
+		return 0;
+
+	__ccu_write_enable(ccu);
+
+	/* For non-autogated clocks, we set the powerdown bit */
+	reg_val = __ccu_read(ccu, pwrdwn->offset);
+	reg_val &= ~(1 << pwrdwn->pwrdwn_bit);
+	__ccu_write(ccu, pwrdwn->offset, reg_val);
+
+	/* Then, we reset the PLL clock and wait for it to unlock */
+	pll_reset(ccu, pll);
+
+	__ccu_write_disable(ccu);
+
+	return 0;
+}
+
+static void kona_pll_clk_disable(struct clk_hw *hw)
+{
+	struct kona_clk *bcm_clk = to_kona_clk(hw);
+	struct pll_reg_data *pll = bcm_clk->u.pll_reg_data;
+	struct bcm_pll_pwrdwn *pwrdwn = &pll->pwrdwn;
+	struct ccu_data *ccu = bcm_clk->ccu;
+	u32 reg_val;
+
+	/* For autogated clocks, we don't control the enable/disable */
+	if (pll_is_autogated(pll))
+		return;
+
+	__ccu_write_enable(ccu);
+
+	reg_val = __ccu_read(ccu, pwrdwn->offset);
+	reg_val |= (1 << pwrdwn->pwrdwn_bit);
+	__ccu_write(ccu, pwrdwn->offset, reg_val);
+
+	__ccu_write_disable(ccu);
+}
+
+static int kona_pll_clk_is_enabled(struct clk_hw *hw)
+{
+	struct kona_clk *bcm_clk = to_kona_clk(hw);
+	struct pll_reg_data *pll = bcm_clk->u.pll_reg_data;
+	struct bcm_pll_pwrdwn *pwrdwn = &bcm_clk->u.pll_reg_data->pwrdwn;
+	struct ccu_data *ccu = bcm_clk->ccu;
+	u32 reg_val;
+
+	/* For autogated clocks, we don't control the enable/disable */
+	if (pll_is_autogated(pll))
+		return true;
+
+	reg_val = __ccu_read(ccu, pwrdwn->offset);
+	if (reg_val & (1 << pwrdwn->pwrdwn_bit))
+		return false;
+
+	return true;
+}
+
+static unsigned long kona_pll_clk_recalc_rate(struct clk_hw *hw,
+			unsigned long parent_rate)
+{
+	struct kona_clk *bcm_clk = to_kona_clk(hw);
+	struct pll_reg_data *pll = bcm_clk->u.pll_reg_data;
+	struct ccu_data *ccu = bcm_clk->ccu;
+	u32 nfrac, pdiv, ndiv, frac_div;
+	unsigned long rate;
+
+	pdiv = bitfield_extract(__ccu_read(ccu, pll->pdiv.offset),
+				pll->pdiv.shift, pll->pdiv.width);
+	ndiv = bitfield_extract(__ccu_read(ccu, pll->ndiv.offset),
+				pll->ndiv.shift, pll->ndiv.width);
+	nfrac = bitfield_extract(__ccu_read(ccu, pll->nfrac.offset),
+				pll->nfrac.shift, pll->nfrac.width);
+	frac_div = 1 + bitfield_mask(pll->nfrac.shift, pll->nfrac.width);
+
+	rate = compute_pll_rate(bcm_clk, pdiv, ndiv, nfrac, frac_div);
+
+	return rate;
+}
+
+static int kona_pll_clk_set_rate(struct clk_hw *hw, unsigned long rate,
+			unsigned long parent_rate)
+{
+	struct kona_clk *bcm_clk = to_kona_clk(hw);
+	const char *name = bcm_clk->init_data.name;
+	struct pll_reg_data *pll = bcm_clk->u.pll_reg_data;
+	struct bcm_pll_cfg *pll_cfg = &pll->cfg;
+	struct ccu_data *ccu = bcm_clk->ccu;
+	u32 pdiv, ndiv, nfrac;
+	u32 new_rate;
+	u32 reg_val;
+	u32 t;
+
+	/* Round down rate and get pdiv, ndiv, nfrac values */
+	new_rate = compute_pll_divs(bcm_clk, (u32)rate, &pdiv, &ndiv, &nfrac);
+
+	if (abs(new_rate - rate) > 100) {
+		pr_err("%s: invalid rate %lu for PLL clock %s\n",
+			__func__, rate, name);
+		return -EINVAL;
+	}
+
+	__ccu_write_enable(ccu);
+
+	/* Set correct PLL config register value for this rate */
+	if (pll_cfg_exists(pll_cfg) && pll_cfg->n_tholds) {
+		for (t = 0; t < pll_cfg->n_tholds; t++) {
+			if (pll_cfg->tholds[t] > new_rate ||
+			    pll_cfg->tholds[t] == PLL_CFG_THOLD_MAX) {
+				__ccu_write(ccu, pll_cfg->offset,
+					pll_cfg->cfg_values[t] << pll_cfg->shift);
+				break;
+			}
+		}
+	}
+
+	/* Write nfrac */
+	reg_val = __ccu_read(ccu, pll->nfrac.offset);
+	reg_val = bitfield_replace(reg_val, pll->nfrac.shift, pll->nfrac.width,
+				   nfrac);
+	__ccu_write(ccu, pll->nfrac.offset, reg_val);
+
+	/* Write ndiv */
+	reg_val = __ccu_read(ccu, pll->ndiv.offset);
+	reg_val = bitfield_replace(reg_val, pll->ndiv.shift, pll->ndiv.width,
+				   ndiv);
+	__ccu_write(ccu, pll->ndiv.offset, reg_val);
+
+	/* Write pdiv */
+	reg_val = __ccu_read(ccu, pll->pdiv.offset);
+	reg_val = bitfield_replace(reg_val, pll->pdiv.shift, pll->pdiv.width,
+				   pdiv);
+	__ccu_write(ccu, pll->pdiv.offset, reg_val);
+
+	/* Reset clock and wait for it to unlock */
+	pll_reset(ccu, pll);
+
+	__ccu_write_disable(ccu);
+
+	return 0;
+}
+
+static long kona_pll_clk_round_rate(struct clk_hw *hw, unsigned long rate,
+			unsigned long *parent_rate)
+{
+	struct kona_clk *bcm_clk = to_kona_clk(hw);
+	u32 round_rate;
+
+	round_rate = compute_pll_divs(bcm_clk, (u32)rate, NULL, NULL, NULL);
+
+	return round_rate;
+}
+
+struct clk_ops kona_pll_clk_ops = {
+	.enable = kona_pll_clk_enable,
+	.disable = kona_pll_clk_disable,
+	.is_enabled = kona_pll_clk_is_enabled,
+	.set_rate = kona_pll_clk_set_rate,
+	.recalc_rate = kona_pll_clk_recalc_rate,
+	.round_rate = kona_pll_clk_round_rate,
+};
+
+static bool __pll_clk_init(struct kona_clk *bcm_clk)
+{
+	struct pll_reg_data *pll = bcm_clk->u.pll_reg_data;
+	const char *name = bcm_clk->init_data.name;
+	struct ccu_data *ccu = bcm_clk->ccu;
+	u32 reg_val;
+
+	BUG_ON(bcm_clk->type != bcm_clk_pll);
+
+	/*
+	 * If the clock is autogated, we set the idle powerdown override bit,
+	 * otherwise we unset it.
+	 */
+	if (pwrdwn_has_idle_override(&pll->pwrdwn)) {
+		reg_val = __ccu_read(ccu, pll->pwrdwn.offset);
+		if (pll_is_autogated(pll))
+			reg_val |= BIT(pll->pwrdwn.idle_pwrdwn_override_bit);
+		else
+			reg_val &= ~BIT(pll->pwrdwn.idle_pwrdwn_override_bit);
+		__ccu_write(ccu, pll->pwrdwn.offset, reg_val);
+	}
+
+	/* If clock has desense, initialize it */
+	if (desense_exists(&pll->desense)) {
+		if (desense_init(bcm_clk)) {
+			pr_err("%s: error initializing desense for %s\n",
+				__func__, name);
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static bool __kona_clk_init(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
@@ -1360,6 +1775,8 @@ static bool __kona_clk_init(struct kona_clk *bcm_clk)
 		return __bus_clk_init(bcm_clk);
 	case bcm_clk_peri:
 		return __peri_clk_init(bcm_clk);
+	case bcm_clk_pll:
+		return __pll_clk_init(bcm_clk);
 	default:
 		BUG();
 	}

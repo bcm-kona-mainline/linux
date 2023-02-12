@@ -557,6 +557,91 @@ bus_clk_reg_data_valid(struct kona_clk *bcm_clk)
 	return true;
 }
 
+/* PLL clock validation helpers. */
+
+static bool pwrdwn_valid(struct bcm_pll_pwrdwn *pwrdwn, const char *clock_name)
+{
+	if (!bit_posn_valid(pwrdwn->pwrdwn_bit, "power-down bit",
+			    clock_name))
+		return false;
+
+	if (!bit_posn_valid(pwrdwn->idle_pwrdwn_override_bit,
+			    "idle power-down software override bit",
+			    clock_name))
+		return false;
+
+	return true;
+}
+
+static bool reset_valid(struct bcm_pll_reset *reset, const char *clock_name)
+{
+	if (!bit_posn_valid(reset->reset_bit, "reset bit", clock_name))
+		return false;
+
+	if (!bit_posn_valid(reset->post_reset_bit, "post-reset bit",
+			    clock_name))
+		return false;
+
+	return true;
+}
+
+static bool lock_valid(struct bcm_pll_lock *lock, const char *clock_name)
+{
+	if (!bit_posn_valid(lock->lock_bit, "lock bit", clock_name))
+		return false;
+
+	return true;
+}
+
+static bool nfrac_valid(struct bcm_pll_nfrac *nfrac, const char *clock_name)
+{
+	if (!bitfield_valid(nfrac->shift, nfrac->width, "divider fraction",
+			    clock_name))
+		return false;
+
+	return true;
+}
+
+static bool pll_div_valid(struct bcm_pll_div *div, const char *field_name,
+			const char *clock_name)
+{
+	if (!bitfield_valid(div->shift, div->width, field_name, clock_name))
+		return false;
+
+	return true;
+}
+
+static bool pll_clk_reg_data_valid(struct kona_clk *bcm_clk)
+{
+	struct pll_reg_data *pll = bcm_clk->u.pll_reg_data;
+	const char *name = bcm_clk->init_data.name;
+
+	BUG_ON(bcm_clk->type != bcm_clk_pll);
+
+	if (!pwrdwn_exists(&pll->pwrdwn) || !pwrdwn_valid(&pll->pwrdwn, name))
+		return false;
+
+	if (!reset_exists(&pll->reset) || !reset_valid(&pll->reset, name))
+		return false;
+
+	if (!lock_exists(&pll->lock) || !lock_valid(&pll->lock, name))
+		return false;
+
+	/* Verify pdiv, ndiv and nfrac exist and are valid */
+	if (!pdiv_exists(&pll->pdiv) ||
+	    !pll_div_valid(&pll->pdiv, "pre-divider", name))
+		return false;
+
+	if (!ndiv_exists(&pll->ndiv) ||
+	    !pll_div_valid(&pll->ndiv, "divider integer", name))
+		return false;
+
+	if (!nfrac_exists(&pll->nfrac) || !nfrac_valid(&pll->nfrac, name))
+		return false;
+
+	return true;
+}
+
 static bool kona_clk_valid(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
@@ -570,6 +655,10 @@ static bool kona_clk_valid(struct kona_clk *bcm_clk)
 		break;
 	case bcm_clk_peri:
 		if (!peri_clk_reg_data_valid(bcm_clk))
+			return false;
+		break;
+	case bcm_clk_pll:
+		if (!pll_clk_reg_data_valid(bcm_clk))
 			return false;
 		break;
 	default:
@@ -748,6 +837,13 @@ static void bus_clk_teardown(struct clk_reg_data *data,
 	init_data->parent_names = NULL;
 }
 
+static void pll_clk_teardown(struct clk_init_data *init_data)
+{
+	init_data->num_parents = 0;
+	kfree(init_data->parent_names);
+	init_data->parent_names = NULL;
+}
+
 /*
  * Caller is responsible for freeing the parent_names[] and
  * parent_sel[] arrays in the peripheral clock's "data" structure
@@ -773,6 +869,14 @@ bus_clk_setup(struct clk_reg_data *data, struct clk_init_data *init_data)
 	return 0;
 }
 
+static void pll_clk_setup(struct clk_init_data *init_data)
+{
+	init_data->flags = CLK_IGNORE_UNUSED;
+
+	init_data->parent_names = NULL;
+	init_data->num_parents = 0;
+}
+
 static void bcm_clk_teardown(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
@@ -784,6 +888,9 @@ static void bcm_clk_teardown(struct kona_clk *bcm_clk)
 		break;
 	case bcm_clk_peri:
 		peri_clk_teardown(bcm_clk->u.data, &bcm_clk->init_data);
+		break;
+	case bcm_clk_pll:
+		pll_clk_teardown(&bcm_clk->init_data);
 		break;
 	default:
 		break;
@@ -825,6 +932,9 @@ static int kona_clk_setup(struct kona_clk *bcm_clk)
 		ret = peri_clk_setup(bcm_clk->u.data, init_data);
 		if (ret)
 			return ret;
+		break;
+	case bcm_clk_pll:
+		pll_clk_setup(init_data);
 		break;
 	default:
 		pr_err("%s: clock type %d invalid for %s\n", __func__,
