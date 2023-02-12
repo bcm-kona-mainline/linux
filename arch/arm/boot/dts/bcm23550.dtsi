@@ -89,7 +89,7 @@
 				<GIC_SPI 212 IRQ_TYPE_LEVEL_HIGH>,
 				<GIC_SPI 213 IRQ_TYPE_LEVEL_HIGH>;
 			clock-frequency = <32768>; /* static 32khz */
-			brcm,kona-system-timer-channel = <3>;
+			brcm,local-timer-channel-offset = <0>;
 		};
 
 		pwrmgr: pwrmgr@1010000 {
@@ -112,6 +112,17 @@
 			interrupt-controller;
 			reg = <0x01b21000 0x1000>,
 			      <0x01b22000 0x1000>;
+		};
+	};
+
+	clocks {
+		proc_ccu: proc_ccu@3fe00000 {
+			compatible = BCM23550_DT_PROC_CCU_COMPAT;
+			reg = <0x3fe00000 0x0f00>;
+			#clock-cells = <1>;
+			clock-output-names = "a7_pll",
+					     "arm_switch",
+					     "cci";
 		};
 	};
 };

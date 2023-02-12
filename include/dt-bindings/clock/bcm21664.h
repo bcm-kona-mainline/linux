@@ -12,11 +12,20 @@
  * the clock control units (CCUs) on Broadcom BCM21664 family SoCs.
  */
 
-/* bcm21664 CCU device tree "compatible" strings */
+/* device tree "compatible" strings */
+#define BCM23550_DT_PROC_CCU_COMPAT	"brcm,bcm23550-proc-ccu"
+#define BCM21664_DT_PROC_CCU_COMPAT	"brcm,bcm21664-proc-ccu"
 #define BCM21664_DT_ROOT_CCU_COMPAT	"brcm,bcm21664-root-ccu"
 #define BCM21664_DT_AON_CCU_COMPAT	"brcm,bcm21664-aon-ccu"
 #define BCM21664_DT_MASTER_CCU_COMPAT	"brcm,bcm21664-master-ccu"
 #define BCM21664_DT_SLAVE_CCU_COMPAT	"brcm,bcm21664-slave-ccu"
+
+/* BCM23550 proc CCU clock ids */
+
+#define BCM23550_PROC_CCU_A7_PLL		0
+#define BCM23550_PROC_CCU_ARM_SWITCH		1
+#define BCM23550_PROC_CCU_CCI			2
+#define BCM23550_PROC_CCU_CLOCK_COUNT		3
 
 /* root CCU clock ids */
 
@@ -25,10 +34,11 @@
 
 /* aon CCU clock ids */
 
-#define BCM21664_AON_CCU_HUB_TIMER		0
-#define BCM21664_AON_CCU_PMU_BSC_APB		1
-#define BCM21664_AON_CCU_PMU_BSC		2
-#define BCM21664_AON_CCU_CLOCK_COUNT		3
+#define BCM21664_AON_CCU_HUB_TIMER_APB		0
+#define BCM21664_AON_CCU_HUB_TIMER		1
+#define BCM21664_AON_CCU_PMU_BSC_APB		2
+#define BCM21664_AON_CCU_PMU_BSC		3
+#define BCM21664_AON_CCU_CLOCK_COUNT		4
 
 /* master CCU clock ids */
 

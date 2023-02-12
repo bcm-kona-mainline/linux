@@ -10,6 +10,87 @@
 #define BCM21664_CCU_COMMON(_name, _capname) \
 	KONA_CCU_COMMON(BCM21664, _name, _capname)
 
+#define BCM23550_CCU_COMMON(_name, _capname) \
+	KONA_CCU_COMMON(BCM23550, _name, _capname)
+
+/* Proc CCU */
+
+static struct pll_reg_data a7_pll_data = {
+	.cfg		= {
+		PLL_CFG_OFFSET(0x0c18, 0, 28),
+
+		.tholds		= {FREQ_MHZ(1750), PLL_CFG_THOLD_MAX},
+		.cfg_values	= {0x8000000, 0x8002000},
+		.n_tholds	= 2,
+	},
+
+	.pwrdwn		= PLL_PWRDWN(0x0c00, 3, 4),
+	.reset		= PLL_RESET(0x0c00, 0, 1),
+	.lock		= PLL_LOCK(0x0c00, 28),
+
+	.pdiv		= PLL_DIV(0x0c00, 24, 3),
+	.ndiv		= PLL_DIV(0x0c00, 8, 9),
+	.nfrac		= PLL_NFRAC(0x0c04, 0, 20),
+
+	.desense	= PLL_DESENSE_BOTH(0xc24, -14500000),
+	.flags		= FLAG(PLL, AUTOGATE)|FLAG(PLL, DELAYED_LOCK),
+
+	.xtal_rate	= FREQ_MHZ(26),
+};
+
+static struct clk_reg_data arm_switch_data = {
+	.gate		= HW_SW_GATE(0x0210, 16, 0, 1),
+	.hyst		= HYST(0x0210, 9, 8),
+};
+
+static struct clk_reg_data cci_data = {
+	.gate		= HW_SW_GATE(0x0400, 16, 0, 1),
+	.hyst		= HYST(0x0400, 9, 8),
+};
+
+static struct ccu_data bcm23550_proc_ccu_data = {
+	BCM23550_CCU_COMMON(bcm23550_proc, PROC),
+   .policy		= {
+		.enable		= CCU_LVM_EN(0x0034, 0),
+		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
+		.mask		= CCU_POLICY_MASK(0x0010, 0),
+	},
+	.voltage	= {
+		CCU_VOLTAGE_OFFSET(0x0040, 0x0044),
+		.voltage_table = {
+			CCU_VOLTAGE_A9_ECO,
+			CCU_VOLTAGE_A9_ECO,
+			CCU_VOLTAGE_A9_ECO,
+			CCU_VOLTAGE_A9_ECO,
+			CCU_VOLTAGE_A9_TURBO,
+			CCU_VOLTAGE_A9_NORMAL,
+			CCU_VOLTAGE_A9_TURBO,
+			CCU_VOLTAGE_A9_SUPER_TURBO,
+		},
+		.voltage_table_len = 8,
+	},
+	.freq_policy	= {
+		.offset = 0x0008,
+		.freq_policy_table = {
+			4, 4, 4, 7 /* ECO, ECO, ECO, SUPER_TURBO */
+		},
+		.freq_policy_table_len = 4,
+	},
+	.interrupt		= {
+		.enable_offset = 0x0020,
+		.status_offset = 0x0024,
+	},
+	.kona_clks	= {
+		[BCM23550_PROC_CCU_A7_PLL] =
+			KONA_CLK(bcm23550_proc, a7_pll, pll),
+		[BCM23550_PROC_CCU_ARM_SWITCH] =
+			KONA_CLK(bcm23550_proc, arm_switch, bus),
+		[BCM23550_PROC_CCU_CCI] =
+			KONA_CLK(bcm23550_proc, cci, bus),
+		[BCM23550_PROC_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
+	},
+};
+
 /* Root CCU */
 
 static struct clk_reg_data frac_1m_data = {
@@ -28,6 +109,11 @@ static struct ccu_data root_ccu_data = {
 };
 
 /* AON CCU */
+
+static struct clk_reg_data hub_timer_apb_data = {
+	.gate		= HW_SW_GATE(0x0414, 18, 2, 3),
+	.hyst		= HYST(0x0414, 10, 11),
+};
 
 static struct clk_reg_data hub_timer_data = {
 	.gate		= HW_SW_GATE(0x0414, 16, 0, 1),
@@ -88,7 +174,13 @@ static struct ccu_data aon_ccu_data = {
 		},
 		.freq_policy_table_len = 4,
 	},
+	.interrupt		= {
+		.enable_offset = 0x0020,
+		.status_offset = 0x0024,
+	},
 	.kona_clks	= {
+		[BCM21664_AON_CCU_HUB_TIMER_APB] =
+			KONA_CLK(aon, hub_timer_apb, bus),
 		[BCM21664_AON_CCU_HUB_TIMER] =
 			KONA_CLK(aon, hub_timer, peri),
 		[BCM21664_AON_CCU_PMU_BSC_APB] =
@@ -224,6 +316,10 @@ static struct ccu_data master_ccu_data = {
 			3, 3, 3, 3 /* ECO, ECO, NORMAL, NORMAL */
 		},
 		.freq_policy_table_len = 4,
+	},
+	.interrupt		= {
+		.enable_offset = 0x0020,
+		.status_offset = 0x0024,
 	},
 	.kona_clks	= {
 		[BCM21664_MASTER_CCU_SDIO1_AHB] =
@@ -362,7 +458,7 @@ static struct clk_reg_data bsc4_data = {
 
 static struct ccu_data slave_ccu_data = {
 	BCM21664_CCU_COMMON(slave, SLAVE),
-       .policy		= {
+   .policy		= {
 		.enable		= CCU_LVM_EN(0x0034, 0),
 		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
 		.mask		= CCU_POLICY_MASK(0x0010, 0),
@@ -393,6 +489,10 @@ static struct ccu_data slave_ccu_data = {
 			3, 3, 3, 3 /* ECO, ECO, NORMAL, NORMAL */
 		},
 		.freq_policy_table_len = 4,
+	},
+	.interrupt		= {
+		.enable_offset = 0x0020,
+		.status_offset = 0x0024,
 	},
 	.kona_clks	= {
 		[BCM21664_SLAVE_CCU_UARTB_APB] =
@@ -429,6 +529,11 @@ static struct ccu_data slave_ccu_data = {
 
 /* Device tree match table callback functions */
 
+static void __init bcm23550_dt_proc_ccu_setup(struct device_node *node)
+{
+	kona_dt_ccu_setup(&bcm23550_proc_ccu_data, node);
+}
+
 static void __init kona_dt_root_ccu_setup(struct device_node *node)
 {
 	kona_dt_ccu_setup(&root_ccu_data, node);
@@ -449,6 +554,8 @@ static void __init kona_dt_slave_ccu_setup(struct device_node *node)
 	kona_dt_ccu_setup(&slave_ccu_data, node);
 }
 
+CLK_OF_DECLARE(bcm23550_proc_ccu, BCM23550_DT_PROC_CCU_COMPAT,
+			bcm23550_dt_proc_ccu_setup);
 CLK_OF_DECLARE(bcm21664_root_ccu, BCM21664_DT_ROOT_CCU_COMPAT,
 			kona_dt_root_ccu_setup);
 CLK_OF_DECLARE(bcm21664_aon_ccu, BCM21664_DT_AON_CCU_COMPAT,
