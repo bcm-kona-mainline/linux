@@ -38,6 +38,20 @@ static struct pll_reg_data a7_pll_data = {
 	.xtal_rate	= FREQ_MHZ(26),
 };
 
+static struct pll_chnl_reg_data a7_pll_chnl0_data = {
+	.enable		= PLL_CHNL_ENABLE(0x0c08, 9),
+	.load		= PLL_CHNL_LOAD(0x0c08, 11),
+	.mdiv		= PLL_CHNL_MDIV(0x0c08, 0, 8),
+	.parent_name	= "a7_pll",
+};
+
+static struct pll_chnl_reg_data a7_pll_chnl1_data = {
+	.enable		= PLL_CHNL_ENABLE(0x0c20, 9),
+	.load		= PLL_CHNL_LOAD(0x0c20, 11),
+	.mdiv		= PLL_CHNL_MDIV(0x0c20, 0, 8),
+	.parent_name	= "a7_pll",
+};
+
 static struct clk_reg_data arm_switch_data = {
 	.gate		= HW_SW_GATE(0x0210, 16, 0, 1),
 	.hyst		= HYST(0x0210, 9, 8),
@@ -83,6 +97,10 @@ static struct ccu_data bcm23550_proc_ccu_data = {
 	.kona_clks	= {
 		[BCM23550_PROC_CCU_A7_PLL] =
 			KONA_CLK(bcm23550_proc, a7_pll, pll),
+		[BCM23550_PROC_CCU_A7_PLL_CHNL0] =
+			KONA_CLK(bcm23550_proc, a7_pll_chnl0, pll_chnl),
+		[BCM23550_PROC_CCU_A7_PLL_CHNL1] =
+			KONA_CLK(bcm23550_proc, a7_pll_chnl1, pll_chnl),
 		[BCM23550_PROC_CCU_ARM_SWITCH] =
 			KONA_CLK(bcm23550_proc, arm_switch, bus),
 		[BCM23550_PROC_CCU_CCI] =
