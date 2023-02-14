@@ -92,13 +92,20 @@
 #define ndiv_exists(ndiv)		((ndiv)->offset != 0)
 #define nfrac_exists(nfrac)		((nfrac)->offset != 0)
 
+/* PLL channel clock field state tests */
+
+#define chnl_enable_exists(enable)	((enable)->offset != 0)
+#define load_exists(load)		((load)->offset != 0)
+#define mdiv_exists(mdiv)		((mdiv)->offset != 0)
+
 /* Clock type, used to tell common block what it's part of */
 enum bcm_clk_type {
 	bcm_clk_none,		/* undefined clock type */
 	bcm_clk_bus,
 	bcm_clk_core,
 	bcm_clk_peri,
-	bcm_clk_pll
+	bcm_clk_pll,
+	bcm_clk_pll_chnl,
 };
 
 /*
@@ -621,6 +628,65 @@ struct pll_reg_data {
 	unsigned long xtal_rate; /* rate of crystal used for rate calculations */
 };
 
+/*
+ * PLL channel clocks are enabled/disabled by setting/clearing the CLKOUT
+ * enable bit in the enable register.
+ */
+struct bcm_pll_chnl_enable {
+	u32 offset;
+	u32 bit;
+};
+
+/* Enable register initialization macro */
+#define PLL_CHNL_ENABLE(_offset, _bit)					\
+	{								\
+		.offset = (_offset),					\
+		.bit = (_bit),						\
+	}
+
+/*
+ * PLL channel clock changes are synced by setting the load enable bit.
+ */
+struct bcm_pll_chnl_load {
+	u32 offset;
+	u32 en_bit;
+};
+
+/* Load register initialization macro */
+#define PLL_CHNL_LOAD(_offset, _en_bit)					\
+	{								\
+		.offset = (_offset),					\
+		.en_bit = (_en_bit),					\
+	}
+
+/*
+ * The PLL channel clock's frequency is calculated by dividing the rate of the
+ * parent PLL clock by the mdiv divider value, as stored in the configuration
+ * register.
+ */
+struct bcm_pll_chnl_mdiv {
+	u32 offset;
+	u32 shift;
+	u32 width;
+};
+
+/* mdiv register initialization macro */
+#define PLL_CHNL_MDIV(_offset, _shift, _width)				\
+	{								\
+		.offset = (_offset),					\
+		.shift = (_shift),					\
+		.width = (_width),					\
+	}
+
+/* PLL channel clock data */
+struct pll_chnl_reg_data {
+	struct bcm_pll_chnl_enable enable;
+	struct bcm_pll_chnl_load load;
+	struct bcm_pll_chnl_mdiv mdiv;
+
+	const char *parent_name; /* name of parent PLL clock */
+};
+
 struct kona_clk {
 	struct clk_hw hw;
 	struct clk_init_data init_data;	/* includes name of this clock */
@@ -630,6 +696,7 @@ struct kona_clk {
 		void *data;
 		struct clk_reg_data *reg_data;
 		struct pll_reg_data *pll_reg_data;
+		struct pll_chnl_reg_data *pll_chnl_reg_data;
 	} u;
 };
 #define to_kona_clk(_hw) \
@@ -801,6 +868,7 @@ struct ccu_data {
 extern struct clk_ops kona_bus_clk_ops;
 extern struct clk_ops kona_peri_clk_ops;
 extern struct clk_ops kona_pll_clk_ops;
+extern struct clk_ops kona_pll_chnl_clk_ops;
 
 /* Externally visible functions */
 

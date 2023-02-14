@@ -640,6 +640,35 @@ static bool pll_clk_reg_data_valid(struct kona_clk *bcm_clk)
 	return true;
 }
 
+static bool mdiv_valid(struct bcm_pll_chnl_mdiv *mdiv, const char *clock_name)
+{
+	if (!bitfield_valid(mdiv->shift, mdiv->width, "mdiv", clock_name))
+		return false;
+	return true;
+}
+
+static bool pll_chnl_clk_reg_data_valid(struct kona_clk *bcm_clk)
+{
+	struct pll_chnl_reg_data *pll_chnl = bcm_clk->u.pll_chnl_reg_data;
+	const char *name = bcm_clk->init_data.name;
+
+	BUG_ON(bcm_clk->type != bcm_clk_pll_chnl);
+
+	if (!chnl_enable_exists(&pll_chnl->enable) ||
+	    !bit_posn_valid(pll_chnl->enable.bit, "enable bit", name))
+		return false;
+
+	if (!load_exists(&pll_chnl->load) ||
+	    !bit_posn_valid(pll_chnl->load.en_bit, "load bit", name))
+		return false;
+
+	if (!mdiv_exists(&pll_chnl->mdiv) ||
+	    !mdiv_valid(&pll_chnl->mdiv, name))
+		return false;
+
+	return true;
+}
+
 static bool kona_clk_valid(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
@@ -653,6 +682,10 @@ static bool kona_clk_valid(struct kona_clk *bcm_clk)
 		break;
 	case bcm_clk_pll:
 		if (!pll_clk_reg_data_valid(bcm_clk))
+			return false;
+		break;
+	case bcm_clk_pll_chnl:
+		if (!pll_chnl_clk_reg_data_valid(bcm_clk))
 			return false;
 		break;
 	default:
@@ -838,6 +871,13 @@ static void pll_clk_teardown(struct clk_init_data *init_data)
 	init_data->parent_names = NULL;
 }
 
+static void pll_chnl_clk_teardown(struct clk_init_data *init_data)
+{
+	init_data->num_parents = 0;
+	kfree(init_data->parent_names);
+	init_data->parent_names = NULL;
+}
+
 /*
  * Caller is responsible for freeing the parent_names[] and
  * parent_sel[] arrays in the peripheral clock's "data" structure
@@ -871,6 +911,16 @@ static void pll_clk_setup(struct clk_init_data *init_data)
 	init_data->num_parents = 0;
 }
 
+static void
+pll_chnl_clk_setup(struct pll_chnl_reg_data *data,
+				   struct clk_init_data *init_data)
+{
+	init_data->flags = CLK_IGNORE_UNUSED;
+
+	init_data->parent_names = &data->parent_name;
+	init_data->num_parents = 1;
+}
+
 static void bcm_clk_teardown(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
@@ -882,6 +932,9 @@ static void bcm_clk_teardown(struct kona_clk *bcm_clk)
 		break;
 	case bcm_clk_pll:
 		pll_clk_teardown(&bcm_clk->init_data);
+		break;
+	case bcm_clk_pll_chnl:
+		pll_chnl_clk_teardown(&bcm_clk->init_data);
 		break;
 	default:
 		break;
@@ -921,6 +974,9 @@ static int kona_clk_setup(struct kona_clk *bcm_clk)
 		break;
 	case bcm_clk_pll:
 		pll_clk_setup(init_data);
+		break;
+	case bcm_clk_pll_chnl:
+		pll_chnl_clk_setup(bcm_clk->u.data, init_data);
 		break;
 	default:
 		pr_err("%s: clock type %d invalid for %s\n", __func__,
