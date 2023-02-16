@@ -625,7 +625,7 @@ struct pll_reg_data {
 
 	u32 flags;
 
-	unsigned long xtal_rate; /* rate of crystal used for rate calculations */
+	const char *xtal_name; /* name of crystal used for rate calculations */
 };
 
 /*

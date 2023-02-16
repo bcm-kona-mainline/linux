@@ -1374,13 +1374,9 @@ static int pll_reset(struct ccu_data *ccu, struct pll_reg_data *pll)
 /* Calculate the rate of the clock based on the provided divider values. */
 static unsigned long
 compute_pll_rate(struct kona_clk *clk, u32 pdiv, u32 ndiv, u32 nfrac,
-		 u32 frac_div)
+		 u32 frac_div, unsigned long xtal_rate)
 {
-	struct pll_reg_data *pll = clk->u.pll_reg_data;
-	unsigned long xtal_rate = pll->xtal_rate;
-	u64 rate;
-
-	rate = (u64)xtal_rate * (u64)(ndiv * frac_div + nfrac);
+	u64 rate = (u64)xtal_rate * (u64)(ndiv * frac_div + nfrac);
 	do_div(rate, pdiv * frac_div);
 
 	return (unsigned long)rate;
@@ -1395,10 +1391,9 @@ compute_pll_rate(struct kona_clk *clk, u32 pdiv, u32 ndiv, u32 nfrac,
  */
 static unsigned long
 compute_pll_divs(struct kona_clk *clk, unsigned long rate, u32 *pdiv_ptr,
-		 u32 *ndiv_ptr, u32 *nfrac_ptr)
+		 u32 *ndiv_ptr, u32 *nfrac_ptr, unsigned long xtal_rate)
 {
 	struct pll_reg_data *pll = clk->u.pll_reg_data;
-	unsigned long xtal_rate = pll->xtal_rate;
 	unsigned long calc_rate;
 	u32 max_ndiv = 1 << pll->ndiv.width;
 	unsigned long tmp1;
@@ -1419,24 +1414,25 @@ compute_pll_divs(struct kona_clk *clk, unsigned long rate, u32 *pdiv_ptr,
 	nfrac = (u32)temp_frac;
 	nfrac &= (frac_div - 1);
 
-	calc_rate = compute_pll_rate(clk, pdiv, ndiv, nfrac, frac_div);
+	calc_rate = compute_pll_rate(clk, pdiv, ndiv, nfrac, frac_div,
+				     xtal_rate);
 	if (calc_rate == rate)
 		goto done;
 
 	for (; nfrac < frac_div; nfrac++) {
 		calc_rate = compute_pll_rate(clk, pdiv, ndiv, nfrac,
-						frac_div);
+					     frac_div, xtal_rate);
 
 		if (calc_rate > rate) {
 			tmp1 = compute_pll_rate(clk, pdiv, ndiv,
-					nfrac - 1, frac_div);
+					nfrac - 1, frac_div, xtal_rate);
 			if (abs(calc_rate - rate) > abs(rate - tmp1))
 				nfrac--;
 			break;
 		};
 	}
 	calc_rate = compute_pll_rate(clk, pdiv, ndiv, nfrac,
-					frac_div);
+				     frac_div, xtal_rate);
 done:
 	if (ndiv == max_ndiv)
 		ndiv = 0;
@@ -1457,11 +1453,13 @@ static int desense_set_offset(struct kona_clk *clk, int offset)
 	struct pll_reg_data *pll = clk->u.pll_reg_data;
 	struct bcm_pll_desense *desense = &pll->desense;
 	struct ccu_data *ccu = clk->ccu;
-	unsigned long curr_rate, new_rate;
+	unsigned long curr_rate, new_rate, xtal_rate;
 	int offset_rate;
 	u32 ndiv_off, nfrac_off;
 	u32 ndiv, nfrac;
 	u32 pll_offset_val;
+
+	xtal_rate = clk_hw_get_rate(clk_hw_get_parent(&clk->hw));
 
 	if (!desense_flag_enable(desense))
 		return 0;
@@ -1470,7 +1468,7 @@ static int desense_set_offset(struct kona_clk *clk, int offset)
 	offset_rate = curr_rate + offset;
 
 	new_rate = compute_pll_divs(clk, offset_rate, NULL, &ndiv_off,
-				      &nfrac_off);
+				    &nfrac_off, xtal_rate);
 
 	if (abs(new_rate - offset_rate) > 100) {
 		pr_err("%s: offset %u not supported for rate %lu",
@@ -1627,7 +1625,8 @@ static unsigned long kona_pll_clk_recalc_rate(struct clk_hw *hw,
 				pll->nfrac.shift, pll->nfrac.width);
 	frac_div = 1 + bitfield_mask(pll->nfrac.shift, pll->nfrac.width);
 
-	rate = compute_pll_rate(bcm_clk, pdiv, ndiv, nfrac, frac_div);
+	rate = compute_pll_rate(bcm_clk, pdiv, ndiv, nfrac, frac_div,
+				parent_rate);
 
 	return rate;
 }
@@ -1640,13 +1639,17 @@ static int kona_pll_clk_set_rate(struct clk_hw *hw, unsigned long rate,
 	struct pll_reg_data *pll = bcm_clk->u.pll_reg_data;
 	struct bcm_pll_cfg *pll_cfg = &pll->cfg;
 	struct ccu_data *ccu = bcm_clk->ccu;
+	unsigned long xtal_rate;
 	u32 pdiv, ndiv, nfrac;
 	u32 new_rate;
 	u32 reg_val;
 	u32 t;
 
+	xtal_rate = clk_hw_get_rate(clk_hw_get_parent(hw));
+
 	/* Round down rate and get pdiv, ndiv, nfrac values */
-	new_rate = compute_pll_divs(bcm_clk, (u32)rate, &pdiv, &ndiv, &nfrac);
+	new_rate = compute_pll_divs(bcm_clk, (u32)rate, &pdiv, &ndiv, &nfrac,
+				    xtal_rate);
 
 	if (abs(new_rate - rate) > 100) {
 		pr_err("%s: invalid rate %lu for PLL clock %s\n",
@@ -1698,9 +1701,11 @@ static long kona_pll_clk_round_rate(struct clk_hw *hw, unsigned long rate,
 			unsigned long *parent_rate)
 {
 	struct kona_clk *bcm_clk = to_kona_clk(hw);
+	unsigned long xtal_rate = clk_hw_get_rate(clk_hw_get_parent(hw));
 	u32 round_rate;
 
-	round_rate = compute_pll_divs(bcm_clk, (u32)rate, NULL, NULL, NULL);
+	round_rate = compute_pll_divs(bcm_clk, (u32)rate, NULL, NULL, NULL,
+				      xtal_rate);
 
 	return round_rate;
 }

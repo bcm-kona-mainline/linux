@@ -903,12 +903,13 @@ bus_clk_setup(struct clk_reg_data *data, struct clk_init_data *init_data)
 	return 0;
 }
 
-static void pll_clk_setup(struct clk_init_data *init_data)
+static void
+pll_clk_setup(struct pll_reg_data *data, struct clk_init_data *init_data)
 {
 	init_data->flags = CLK_IGNORE_UNUSED;
 
-	init_data->parent_names = NULL;
-	init_data->num_parents = 0;
+	init_data->parent_names = &data->xtal_name;
+	init_data->num_parents = 1;
 }
 
 static void
@@ -973,7 +974,7 @@ static int kona_clk_setup(struct kona_clk *bcm_clk)
 			return ret;
 		break;
 	case bcm_clk_pll:
-		pll_clk_setup(init_data);
+		pll_clk_setup(bcm_clk->u.data, init_data);
 		break;
 	case bcm_clk_pll_chnl:
 		pll_chnl_clk_setup(bcm_clk->u.data, init_data);

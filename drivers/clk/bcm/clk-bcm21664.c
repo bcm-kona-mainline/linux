@@ -35,7 +35,7 @@ static struct pll_reg_data a7_pll_data = {
 	.desense	= PLL_DESENSE_BOTH(0xc24, -14500000),
 	.flags		= FLAG(PLL, AUTOGATE)|FLAG(PLL, DELAYED_LOCK),
 
-	.xtal_rate	= FREQ_MHZ(26),
+	.xtal_name	= "ref_crystal",
 };
 
 static struct pll_chnl_reg_data a7_pll_chnl0_data = {
