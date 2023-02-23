@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/mfd/brcm,bcm59056.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: BCM590xx Power Management Unit MFD
+
+maintainers:
+  - Artur Weber <aweber@dithernet.org>
+
+properties:
+  compatible:
+    enum:
+      - "brcm,bcm59056"
+
+  reg:
+    maxItems: 1
+
+  interrupts:
+    maxItems: 1
+
+  regulators:
+    type: object
+    description: Container node for regulators.
+
+    # The valid regulator node names for BCM59056 are:
+    #   rfldo, camldo1, camldo2, simldo1, simldo2, sdldo, sdxldo,
+    #   mmcldo1, mmcldo2, audldo, micldo, usbldo, vibldo,
+    #   csr, iosr1, iosr2, msr, sdsr1, sdsr2, vsr,
+    #   gpldo1, gpldo2, gpldo3, gpldo4, gpldo5, gpldo6,
+    #   vbus
+    patternProperties:
+      "^(cam|sim|mmc)ldo[1-2]$":
+        type: object
+        $ref: /schemas/regulator/regulator.yaml#
+        unevaluatedProperties: false
+
+      "^(rf|sd|sdx|aud|mic|usb|vib)ldo$":
+        type: object
+        $ref: /schemas/regulator/regulator.yaml#
+        unevaluatedProperties: false
+
+      "^(c|m|v)sr$":
+        type: object
+        $ref: /schemas/regulator/regulator.yaml#
+        unevaluatedProperties: false
+
+      "^(io|sd)sr[1-2]$":
+        type: object
+        $ref: /schemas/regulator/regulator.yaml#
+        unevaluatedProperties: false
+
+      "^gpldo[1-6]$":
+        type: object
+        $ref: /schemas/regulator/regulator.yaml#
+        unevaluatedProperties: false
+
+      "vbus":
+        type: object
+        $ref: /schemas/regulator/regulator.yaml#
+        unevaluatedProperties: false
+
+required:
+  - compatible
+  - reg
+  - interrupts
+
+additionalProperties: false
+
+examples:
+  - |
+    pmu: bcm59056@8 {
+        compatible = "brcm,bcm59056";
+        reg = <0x08>;
+        interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_HIGH>;
+        regulators {
+            rfldo_reg: rfldo {
+                regulator-min-microvolt = <1200000>;
+                regulator-max-microvolt = <3300000>;
+            };
+
+            ...
+        };
+    };
