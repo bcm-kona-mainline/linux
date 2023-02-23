@@ -13,6 +13,7 @@ properties:
   compatible:
     enum:
       - "brcm,bcm59056"
+      - "brcm,bcm59054"
 
   reg:
     maxItems: 1
@@ -24,42 +25,91 @@ properties:
     type: object
     description: Container node for regulators.
 
-    # The valid regulator node names for BCM59056 are:
-    #   rfldo, camldo1, camldo2, simldo1, simldo2, sdldo, sdxldo,
-    #   mmcldo1, mmcldo2, audldo, micldo, usbldo, vibldo,
-    #   csr, iosr1, iosr2, msr, sdsr1, sdsr2, vsr,
-    #   gpldo1, gpldo2, gpldo3, gpldo4, gpldo5, gpldo6,
-    #   vbus
-    patternProperties:
-      "^(cam|sim|mmc)ldo[1-2]$":
-        type: object
-        $ref: /schemas/regulator/regulator.yaml#
-        unevaluatedProperties: false
+    allOf:
+      - if:
+        properties:
+          compatible:
+            contains:
+              const: "brcm,bcm59056"
+      then:
+        # The valid regulator node names for BCM59056 are:
+        #   rfldo, camldo1, camldo2, simldo1, simldo2, sdldo, sdxldo,
+        #   mmcldo1, mmcldo2, audldo, micldo, usbldo, vibldo,
+        #   csr, iosr1, iosr2, msr, sdsr1, sdsr2, vsr,
+        #   gpldo1, gpldo2, gpldo3, gpldo4, gpldo5, gpldo6,
+        #   vbus
+        patternProperties:
+          "^(cam|sim|mmc)ldo[1-2]$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
 
-      "^(rf|sd|sdx|aud|mic|usb|vib)ldo$":
-        type: object
-        $ref: /schemas/regulator/regulator.yaml#
-        unevaluatedProperties: false
+          "^(rf|sd|sdx|aud|mic|usb|vib)ldo$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
 
-      "^(c|m|v)sr$":
-        type: object
-        $ref: /schemas/regulator/regulator.yaml#
-        unevaluatedProperties: false
+          "^(c|m|v)sr$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
 
-      "^(io|sd)sr[1-2]$":
-        type: object
-        $ref: /schemas/regulator/regulator.yaml#
-        unevaluatedProperties: false
+          "^(io|sd)sr[1-2]$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
 
-      "^gpldo[1-6]$":
-        type: object
-        $ref: /schemas/regulator/regulator.yaml#
-        unevaluatedProperties: false
+          "^gpldo[1-6]$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
 
-      "vbus":
-        type: object
-        $ref: /schemas/regulator/regulator.yaml#
-        unevaluatedProperties: false
+          "vbus":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
+
+      - if:
+        properties:
+          compatible:
+            contains:
+              const: "brcm,bcm59054"
+      then:
+        # The valid regulator node names for BCM59054 are:
+        #   rfldo, camldo1, camldo2, simldo1, simldo2, sdldo, sdxldo,
+        #   mmcldo1, mmcldo2, audldo, micldo, usbldo, vibldo,
+        #   csr, iosr1, iosr2, mmsr, sdsr1, sdsr2, vsr,
+        #   gpldo1, gpldo2, gpldo3, tcxldo, lvldo1, lvldo2
+        patternProperties:
+          "^(cam|sim|mmc)ldo[1-2]$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
+
+          "^(rf|sd|sdx|aud|mic|usb|vib|tcx)ldo$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
+
+          "^(c|mm|v)sr$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
+
+          "^(io|sd)sr[1-2]$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
+
+          "^gpldo[1-3]$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
+
+          "^lvldo[1-2]$":
+            type: object
+            $ref: /schemas/regulator/regulator.yaml#
+            unevaluatedProperties: false
 
 required:
   - compatible
