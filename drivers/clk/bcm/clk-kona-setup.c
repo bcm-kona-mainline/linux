@@ -669,11 +669,29 @@ static bool pll_chnl_clk_reg_data_valid(struct kona_clk *bcm_clk)
 	return true;
 }
 
+static bool core_clk_reg_data_valid(struct kona_clk *bcm_clk)
+{
+	struct core_reg_data *core = bcm_clk->u.core_reg_data;
+
+	BUG_ON(bcm_clk->type != bcm_clk_core);
+
+	if (core->policy.policy > 3 ||
+	    core->policy.eco_freq_id > 7 ||
+	    core->policy.target_freq_id > 7)
+		return false;
+
+	return true;
+}
+
 static bool kona_clk_valid(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
 	case bcm_clk_bus:
 		if (!bus_clk_reg_data_valid(bcm_clk))
+			return false;
+		break;
+	case bcm_clk_core:
+		if (!core_clk_reg_data_valid(bcm_clk))
 			return false;
 		break;
 	case bcm_clk_peri:
@@ -878,6 +896,13 @@ static void pll_chnl_clk_teardown(struct clk_init_data *init_data)
 	init_data->parent_names = NULL;
 }
 
+static void core_clk_teardown(struct clk_init_data *init_data)
+{
+	init_data->num_parents = 0;
+	kfree(init_data->parent_names);
+	init_data->parent_names = NULL;
+}
+
 /*
  * Caller is responsible for freeing the parent_names[] and
  * parent_sel[] arrays in the peripheral clock's "data" structure
@@ -922,11 +947,24 @@ pll_chnl_clk_setup(struct pll_chnl_reg_data *data,
 	init_data->num_parents = 1;
 }
 
+static void
+core_clk_setup(struct core_reg_data *data,
+				   struct clk_init_data *init_data)
+{
+	init_data->flags = CLK_IGNORE_UNUSED | CLK_IS_CRITICAL;
+
+	init_data->parent_names = &data->pll_chnl;
+	init_data->num_parents = 1;
+}
+
 static void bcm_clk_teardown(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
 	case bcm_clk_bus:
 		bus_clk_teardown(bcm_clk->u.data, &bcm_clk->init_data);
+		break;
+	case bcm_clk_core:
+		core_clk_teardown(&bcm_clk->init_data);
 		break;
 	case bcm_clk_peri:
 		peri_clk_teardown(bcm_clk->u.data, &bcm_clk->init_data);
@@ -967,6 +1005,9 @@ static int kona_clk_setup(struct kona_clk *bcm_clk)
 		ret = bus_clk_setup(bcm_clk->u.data, init_data);
 		if (ret)
 			return ret;
+		break;
+	case bcm_clk_core:
+		core_clk_setup(bcm_clk->u.data, init_data);
 		break;
 	case bcm_clk_peri:
 		ret = peri_clk_setup(bcm_clk->u.data, init_data);

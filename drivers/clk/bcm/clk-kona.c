@@ -10,6 +10,7 @@
 #include <linux/io.h>
 #include <linux/kernel.h>
 #include <linux/clk-provider.h>
+#include <linux/clk.h>
 
 /*
  * "Policies" affect the frequencies of bus clocks provided by a
@@ -1894,11 +1895,89 @@ struct clk_ops kona_pll_chnl_clk_ops = {
 	.round_rate = kona_pll_chnl_clk_round_rate,
 };
 
+/*
+ * Core clock rates are based on either a static table of rates or the PLL
+ * channel rate, depending on the selected frequency ID as written to the
+ * CCU frequency policy register.
+ *
+ * The first 6 policy IDs are used for static rates, and the last 2 are used
+ * for the PLL channels. We use the last policy ID here as we derive the
+ * frequency from the second PLL channel.
+ */
+
+static int kona_core_clk_set_rate(struct clk_hw *hw, unsigned long rate,
+			unsigned long parent_rate)
+{
+	struct kona_clk *bcm_clk = to_kona_clk(hw);
+	struct core_reg_data *core = bcm_clk->u.core_reg_data;
+	struct bcm_core_policy *policy = &core->policy;
+	struct ccu_data *ccu = bcm_clk->ccu;
+
+	struct clk_hw *pll_ch = clk_hw_get_parent(hw);
+	struct clk_hw *pll = clk_hw_get_parent(pll_ch);
+
+	/*
+	 * Temporarily switch away from using the PLL channel as the clock source
+	 * by switching the policy to "economy".
+	 */
+	kona_ccu_set_freq_policy(ccu, policy->policy, policy->eco_freq_id);
+
+	/* Set PLL frequency to double of the desired rate */
+	clk_set_rate(pll->clk, rate * 2);
+
+	/* Set PLL channel frequency to the desired rate */
+	clk_set_rate(pll_ch->clk, rate);
+
+	/* Switch policy to "super turbo" to apply the changes */
+	kona_ccu_set_freq_policy(ccu, policy->policy, policy->target_freq_id);
+
+	return 0;
+}
+
+static unsigned long kona_core_clk_recalc_rate(struct clk_hw *hw,
+			unsigned long parent_rate)
+{
+	/* Same as parent PLL channel */
+	return parent_rate;
+}
+
+static int kona_core_clk_determine_rate(struct clk_hw *hw,
+					struct clk_rate_request *req)
+{
+	struct clk_hw *current_parent;
+	unsigned long parent_rate;
+
+	current_parent = clk_hw_get_parent(hw);
+	parent_rate = clk_hw_get_rate(current_parent);
+
+	req->rate = parent_rate;
+	return 0;
+}
+
+struct clk_ops kona_core_clk_ops = {
+	.set_rate = kona_core_clk_set_rate,
+	.recalc_rate = kona_core_clk_recalc_rate,
+	.determine_rate = kona_core_clk_determine_rate,
+};
+
+static bool __core_clk_init(struct kona_clk *bcm_clk)
+{
+	struct core_reg_data *core = bcm_clk->u.core_reg_data;
+	struct bcm_core_policy *policy = &core->policy;
+	struct ccu_data *ccu = bcm_clk->ccu;
+
+	kona_ccu_set_freq_policy(ccu, policy->policy, policy->target_freq_id);
+
+	return true;
+}
+
 static bool __kona_clk_init(struct kona_clk *bcm_clk)
 {
 	switch (bcm_clk->type) {
 	case bcm_clk_bus:
 		return __bus_clk_init(bcm_clk);
+	case bcm_clk_core:
+		return __core_clk_init(bcm_clk);
 	case bcm_clk_peri:
 		return __peri_clk_init(bcm_clk);
 	case bcm_clk_pll:

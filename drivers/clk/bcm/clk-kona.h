@@ -687,6 +687,31 @@ struct pll_chnl_reg_data {
 	const char *parent_name; /* name of parent PLL clock */
 };
 
+/* Core clock structures */
+
+/*
+ * The core clock's rate is determined based on the CCU frequency policy.
+ * For the first few frequency IDs, predefined rates are used, and for the
+ * last 2 IDs the rate is calculated from the parent PLL channel clocks.
+ */
+struct bcm_core_policy {
+	u8 policy;		/* number of CCU policy to write changes to */
+	u8 eco_freq_id;		/* freq ID to switch to before setting rate */
+	u8 target_freq_id;	/* freq ID to switch to after setting rate */
+};
+
+#define CORE_POLICY(_policy, _eco_freq_id, _target_freq_id)		\
+	{								\
+		.policy = (_policy),					\
+		.eco_freq_id = (_eco_freq_id),					\
+		.target_freq_id = (_target_freq_id),					\
+	}
+
+struct core_reg_data {
+	struct bcm_core_policy policy;
+	const char *pll_chnl; /* channel clock to use for rate calculations */
+};
+
 struct kona_clk {
 	struct clk_hw hw;
 	struct clk_init_data init_data;	/* includes name of this clock */
@@ -697,6 +722,7 @@ struct kona_clk {
 		struct clk_reg_data *reg_data;
 		struct pll_reg_data *pll_reg_data;
 		struct pll_chnl_reg_data *pll_chnl_reg_data;
+		struct core_reg_data *core_reg_data;
 	} u;
 };
 #define to_kona_clk(_hw) \
@@ -866,6 +892,7 @@ struct ccu_data {
 /* Exported globals */
 
 extern struct clk_ops kona_bus_clk_ops;
+extern struct clk_ops kona_core_clk_ops;
 extern struct clk_ops kona_peri_clk_ops;
 extern struct clk_ops kona_pll_clk_ops;
 extern struct clk_ops kona_pll_chnl_clk_ops;
