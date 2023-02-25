@@ -52,6 +52,11 @@ static struct pll_chnl_reg_data a7_pll_chnl1_data = {
 	.parent_name	= "a7_pll",
 };
 
+static struct core_reg_data a7_core_data = {
+	.policy		= CORE_POLICY(2, 4, 7),
+	.pll_chnl	= "a7_pll_chnl1",
+};
+
 static struct clk_reg_data arm_switch_data = {
 	.gate		= HW_SW_GATE(0x0210, 16, 0, 1),
 	.hyst		= HYST(0x0210, 9, 8),
@@ -101,6 +106,8 @@ static struct ccu_data bcm23550_proc_ccu_data = {
 			KONA_CLK(bcm23550_proc, a7_pll_chnl0, pll_chnl),
 		[BCM23550_PROC_CCU_A7_PLL_CHNL1] =
 			KONA_CLK(bcm23550_proc, a7_pll_chnl1, pll_chnl),
+		[BCM23550_PROC_CCU_A7_CORE] =
+			KONA_CLK(bcm23550_proc, a7_core, core),
 		[BCM23550_PROC_CCU_ARM_SWITCH] =
 			KONA_CLK(bcm23550_proc, arm_switch, bus),
 		[BCM23550_PROC_CCU_CCI] =
