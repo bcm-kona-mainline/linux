@@ -232,6 +232,8 @@ static int lp855x_pwm_ctrl(struct lp855x *lp, int br, int max_br)
 	}
 
 	state.duty_cycle = div_u64(br * state.period, max_br);
+	if (state.duty_cycle == state.period)
+		state.duty_cycle = state.period - 1;
 	state.enabled = state.duty_cycle;
 
 	return pwm_apply_might_sleep(lp->pwm, &state);
