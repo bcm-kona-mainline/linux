@@ -19,3 +19,9 @@
 	/* SCL and SDA pins are swapped */
 	samsung,pins = "gpd1-1", "gpd1-0";
 };
+
+&ldo25_reg {
+	regulator-name = "LCD_VCC_3.3V";
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+};

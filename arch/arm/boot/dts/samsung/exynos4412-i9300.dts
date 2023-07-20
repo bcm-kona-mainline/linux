@@ -25,3 +25,9 @@
 &sound {
 	fm-sel-gpios = <&gpl0 3 GPIO_ACTIVE_HIGH>;
 };
+
+&ldo25_reg {
+	regulator-name = "LCD_VCC_3.3V";
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+};
