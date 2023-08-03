@@ -143,7 +143,7 @@
 			compatible = "snps,dwc2";
 			reg = <0x00e20000 0x10000>;
 			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&usb_otg_ahb_clk>;
+			clocks = <&master_ccu BCM21664_MASTER_CCU_USB_OTG_AHB>;
 			clock-names = "otg";
 			phys = <&usbphy>;
 			phy-names = "usb2-phy";
@@ -248,12 +248,6 @@
 			clock-frequency = <52000000>;
 		};
 
-		usb_otg_ahb_clk: usb_otg_ahb {
-			#clock-cells = <0>;
-			compatible = "fixed-clock";
-			clock-frequency = <52000000>;
-		};
-
 		ref_96m_clk: ref_96m {
 			#clock-cells = <0>;
 			compatible = "fixed-clock";
@@ -308,9 +302,16 @@
 			compatible = "brcm,bcm21664-slave-ccu";
 			reg = <0x3e011000 0x0f00>;
 			#clock-cells = <1>;
-			clock-output-names = "uartb",
+			clock-output-names = "uartb_apb",
+					     "uartb2_apb",
+					     "uartb3_apb",
+					     "uartb",
 					     "uartb2",
 					     "uartb3",
+					     "bsc1_apb",
+					     "bsc2_apb",
+					     "bsc3_apb",
+					     "bsc4_apb",
 					     "bsc1",
 					     "bsc2",
 					     "bsc3",
@@ -321,14 +322,19 @@
 			compatible = "brcm,bcm21664-master-ccu";
 			reg = <0x3f001000 0x0f00>;
 			#clock-cells = <1>;
-			clock-output-names = "sdio1",
+			clock-output-names = "sdio1_ahb",
+					     "sdio2_ahb",
+					     "sdio3_ahb",
+					     "sdio4_ahb",
+			             "sdio1",
 					     "sdio2",
 					     "sdio3",
 					     "sdio4",
 					     "sdio1_sleep",
 					     "sdio2_sleep",
 					     "sdio3_sleep",
-					     "sdio4_sleep";
+					     "sdio4_sleep",
+					     "usb_otg_ahb";
 		};
 	};
 };
