@@ -39,6 +39,22 @@ static struct peri_clk_data hub_timer_data = {
 	.trig		= TRIGGER(0x0a40, 4),
 };
 
+static struct bus_clk_data pmu_bsc_apb_data = {
+	.gate		= HW_SW_GATE(0x0418, 18, 2, 3),
+	.hyst		= HYST(0x0418, 10, 11),
+};
+
+static struct peri_clk_data pmu_bsc_data = {
+	.gate		= HW_SW_GATE(0x0418, 16, 0, 1),
+	.hyst		= HYST(0x0418, 8, 9),
+	.clocks		= CLOCKS("ref_crystal",
+				 "pmu_bsc_var",
+				 "bbl_32k"),
+	.sel		= SELECTOR(0x0a04, 0, 2),
+	.div		= DIVIDER(0x0a04, 3, 4),
+	.trig		= TRIGGER(0x0a40, 0),
+};
+
 static struct ccu_data aon_ccu_data = {
 	BCM21664_CCU_COMMON(aon, AON),
 	.policy		= {
@@ -48,6 +64,10 @@ static struct ccu_data aon_ccu_data = {
 	.kona_clks	= {
 		[BCM21664_AON_CCU_HUB_TIMER] =
 			KONA_CLK(aon, hub_timer, peri),
+		[BCM21664_AON_CCU_PMU_BSC_APB] =
+			KONA_CLK(aon, pmu_bsc_apb, bus),
+		[BCM21664_AON_CCU_PMU_BSC] =
+			KONA_CLK(aon, pmu_bsc, peri),
 		[BCM21664_AON_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
 	},
 };
