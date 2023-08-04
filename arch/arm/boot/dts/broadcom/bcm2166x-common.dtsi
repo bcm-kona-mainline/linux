@@ -52,6 +52,16 @@
 			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&aon_ccu BCM21664_AON_CCU_HUB_TIMER>;
 		};
+
+		pmu_bsc: i2c@100d000 {
+			compatible = "brcm,kona-i2c";
+			reg = <0x0100d000 0xfff>;
+			interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			clocks = <&aon_ccu BCM21664_AON_CCU_PMU_BSC>;
+			status = "disabled";
+		};
 	};
 
 	/* Slaves bus */
@@ -224,6 +234,12 @@
 			clock-frequency = <13000000>;
 		};
 
+		pmu_bsc_var_clk: pmu_bsc_var {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <13000000>;
+		};
+
 		dft_19_5m_clk: dft_19_5m {
 			#clock-cells = <0>;
 			compatible = "fixed-clock";
@@ -295,7 +311,9 @@
 			compatible = "brcm,bcm21664-aon-ccu";
 			reg = <0x35002000 0x0f00>;
 			#clock-cells = <1>;
-			clock-output-names = "hub_timer";
+			clock-output-names = "hub_timer",
+					     "pmu_bsc_apb",
+					     "pmu_bsc";
 		};
 
 		slave_ccu: slave_ccu@3e011000 {
