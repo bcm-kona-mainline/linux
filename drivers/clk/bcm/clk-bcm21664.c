@@ -39,7 +39,7 @@ static struct peri_clk_data hub_timer_data = {
 	.trig		= TRIGGER(0x0a40, 4),
 };
 
-static struct clk_reg_data pmu_bsc_apb_data = {
+static struct bus_clk_data pmu_bsc_apb_data = {
 	.gate		= HW_SW_GATE(0x0418, 18, 2, 3),
 	.hyst		= HYST(0x0418, 10, 11),
 };
