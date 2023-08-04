@@ -44,7 +44,7 @@ static struct clk_reg_data pmu_bsc_apb_data = {
 	.hyst		= HYST(0x0418, 10, 11),
 };
 
-static struct peri_clk_data pmu_data = {
+static struct peri_clk_data pmu_bsc_data = {
 	.gate		= HW_SW_GATE(0x0418, 16, 0, 1),
 	.hyst		= HYST(0x0418, 8, 9),
 	.clocks		= CLOCKS("ref_crystal",
