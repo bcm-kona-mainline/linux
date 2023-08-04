@@ -117,8 +117,6 @@
 
 &bsc3 {
 	clock-frequency = <400000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&bsc3_pins>;
 	status = "okay";
 
 	accel@18 {
@@ -127,8 +125,6 @@
 
 		interrupt-parent = <&gpio>;
 		interrupts = <92 IRQ_TYPE_EDGE_RISING>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&acc_int>;
 
 		mount-matrix = "-1", "0", "0",
 			       "0", "-1", "0",
@@ -143,8 +139,6 @@
 
 		interrupt-parent = <&gpio>;
 		interrupts = <89 IRQ_TYPE_EDGE_FALLING>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&proxi_int>;
 
 		vdd-supply = <&tcxldo_reg>; /* SENSOR_3.3V */
 		vio-supply = <&gpldo1_reg>; /* SENSOR_LED_3.3V */
@@ -156,8 +150,6 @@
 
 &bsc4 {
 	clock-frequency = <400000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&bsc4_pins>;
 	status = "okay";
 
 	/* Melfas MMS144 touchscreen, using the mms136 compatible for now */
@@ -165,8 +157,6 @@
 		compatible = "melfas,mms136";
 		reg = <0x48>;
 		clock-frequency = <230000>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&tsp_default>;
 		interrupt-parent = <&gpio>;
 		interrupts = <73 IRQ_TYPE_EDGE_FALLING>;
 		vdd-supply = <&gpldo2_reg>;
@@ -346,8 +336,6 @@
 &sdio1 {
 	max-frequency = <48000000>;
 	cd-gpio = <&gpio 91 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&cd_pullup>, <&sdio1_pins>;
 	status = "okay";
 };
 
@@ -366,7 +354,3 @@
 	status = "okay";
 };
 */
-
-&dma {
-	status = "okay";
-};
