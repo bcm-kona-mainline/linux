@@ -50,7 +50,7 @@ static struct peri_clk_data pmu_bsc_data = {
 	.clocks		= CLOCKS("ref_crystal",
 				 "pmu_bsc_var",
 				 "bbl_32k"),
-	.sel		= SELECTOR(0x0a04, 0, 3),
+	.sel		= SELECTOR(0x0a04, 0, 2),
 	.div		= DIVIDER(0x0a04, 3, 4),
 	.trig		= TRIGGER(0x0a40, 0),
 };
