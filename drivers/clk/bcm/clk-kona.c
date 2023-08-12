@@ -11,14 +11,6 @@
 #include <linux/kernel.h>
 #include <linux/clk-provider.h>
 
-/*
- * "Policies" affect the frequencies of bus clocks provided by a
- * CCU.  (I believe these polices are named "Deep Sleep", "Economy",
- * "Normal", and "Turbo".)  A lower policy number has lower power
- * consumption, and policy 2 is the default.
- */
-#define CCU_POLICY_COUNT	4
-
 #define CCU_ACCESS_PASSWORD      0xA5A500
 #define CLK_GATE_DELAY_LOOP      2000
 
@@ -341,6 +333,32 @@ static bool policy_init(struct ccu_data *ccu, struct bcm_clk_policy *policy)
 			__func__, ccu->name);
 
 	return ret;
+}
+
+/*
+ * The frequency policy controls the frequencies of bus clocks on the
+ * CCU.  Every CCU policy can have a set frequency policy.  The exact
+ * amount of frequency policies, and what frequencies they set, differs
+ * between each CCU.
+ */
+
+static void
+ccu_set_freq_policy(struct ccu_data *ccu, u32 policy_id, u32 freq_id)
+{
+	/*
+	 * The POLICY_FREQ register in the CCU stores four frequency
+	 * policy values, one for each CCU policy.
+	 */
+	struct bcm_freq_policy *freq = &ccu->policy.freq;
+	u32 offset = freq->offset;
+	u32 shift = (policy_id) * 8;
+	u32 reg_val;
+
+	BUG_ON(freq_id >= CCU_FREQ_POLICY_COUNT_MAX);
+
+	reg_val = __ccu_read(ccu, offset);
+	reg_val = bitfield_replace(reg_val, shift, 3, (u32)policy_id);
+	__ccu_write(ccu, offset, reg_val);
 }
 
 /* Gate operations */
@@ -1314,6 +1332,27 @@ bool __init kona_ccu_init(struct ccu_data *ccu)
 
 	flags = ccu_lock(ccu);
 	__ccu_write_enable(ccu);
+
+	if (!__ccu_policy_engine_stop(ccu)) {
+		pr_err("%s: unable to stop CCU %s policy engine\n",
+			__func__, ccu->name);
+		return false;
+	}
+
+	/* Initialize default frequency policy table */
+	if (ccu_policy_has_freq(&ccu->policy) &&
+			ccu->policy.freq.defaults[0] >= 0) {
+		for (which = 0; which < CCU_POLICY_COUNT; which++) {
+			ccu_set_freq_policy(ccu, which,
+				ccu->policy.freq.defaults[which]);
+		}
+	}
+
+	if (!__ccu_policy_engine_start(ccu, true)) {
+		pr_err("%s: unable to start CCU %s policy engine\n",
+			__func__, ccu->name);
+		return false;
+	}
 
 	for (which = 0; which < ccu->clk_num; which++) {
 		struct kona_clk *bcm_clk = &kona_clks[which];

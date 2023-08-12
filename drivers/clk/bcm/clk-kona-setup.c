@@ -37,6 +37,16 @@ static bool ccu_data_offsets_valid(struct ccu_data *ccu)
 		}
 	}
 
+	if (ccu_policy_has_freq(ccu_policy)) {
+		if (ccu_policy->freq.offset > limit) {
+			pr_err("%s: bad frequency policy offset for %s "
+					"(%u > %u)\n", __func__,
+				ccu->name, ccu_policy->freq.offset,
+				limit);
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -263,6 +273,7 @@ ccu_policy_valid(struct ccu_policy *ccu_policy, const char *ccu_name)
 {
 	struct bcm_lvm_en *enable = &ccu_policy->enable;
 	struct bcm_policy_ctl *control;
+	struct bcm_freq_policy *freq_policy;
 
 	if (!bit_posn_valid(enable->bit, "policy enable", ccu_name))
 		return false;
@@ -276,6 +287,13 @@ ccu_policy_valid(struct ccu_policy *ccu_policy, const char *ccu_name)
 
 	if (!bit_posn_valid(control->ac_bit, "policy control AC", ccu_name))
 		return false;
+
+	if (ccu_policy_has_freq(ccu_policy)) {
+		freq_policy = &ccu_policy->freq;
+
+		if (freq_policy->policy_count > CCU_FREQ_POLICY_COUNT_MAX)
+			return false;
+	}
 
 	return true;
 }
@@ -902,6 +920,46 @@ of_clk_kona_onecell_get(struct of_phandle_args *clkspec, void *data)
 	return &ccu->kona_clks[idx].hw;
 }
 
+static void ccu_dt_setup_freq_policy_defaults(struct ccu_data *ccu,
+					struct device_node *node)
+{
+	int defaults[CCU_POLICY_COUNT] = {-1};
+	int count;
+	int ret;
+	int i;
+
+	if (!of_find_property(node, "brcm,freq-policy-defaults", &count)) {
+		for (i = 0; i < CCU_POLICY_COUNT; i++)
+			ccu->policy.freq.defaults[i] = -1;
+		return;
+	}
+
+	count = count / sizeof(u32);
+	if (count != CCU_POLICY_COUNT) {
+		pr_warn("%s: wrong amount of default freq policy values for %pOFn (found %d, expected %d); ignoring\n",
+			__func__, node, count, CCU_POLICY_COUNT);
+		return;
+	}
+
+	ret = of_property_read_u32_array(node,
+				       "brcm,freq-policy-defaults",
+				       defaults, CCU_POLICY_COUNT);
+	if (ret) {
+		pr_warn("%s: unable to get default frequency policy values for %pOFn (error %d); ignoring\n",
+			__func__, node, ret);
+		return;
+	}
+
+	for (i = 0; i < CCU_POLICY_COUNT; i++) {
+		if (defaults[i] >= CCU_FREQ_POLICY_COUNT_MAX) {
+			pr_warn("%s: invalid frequency policy value %u for %pOFn; ignoring all\n",
+				__func__, defaults[i], node);
+			return;
+		}
+		ccu->policy.freq.defaults[i] = defaults[i];
+	}
+}
+
 /*
  * Set up a CCU.  Call the provided ccu_clks_setup callback to
  * initialize the array of clocks provided by the CCU.
@@ -942,6 +1000,10 @@ void __init kona_dt_ccu_setup(struct ccu_data *ccu,
 		goto out_err;
 	}
 	ccu->node = of_node_get(node);
+
+	/* Set up default frequency policy data from DT */
+	if (ccu_policy_has_freq(&ccu->policy))
+		ccu_dt_setup_freq_policy_defaults(ccu, node);
 
 	/*
 	 * Set up each defined kona clock and save the result in

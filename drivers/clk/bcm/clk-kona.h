@@ -26,6 +26,23 @@
 #define BAD_SCALED_DIV_VALUE	U64_MAX
 
 /*
+ * "Policies" affect the frequencies of bus clocks provided by a
+ * CCU.  (I believe these polices are named "Deep Sleep", "Economy",
+ * "Normal", and "Turbo".)  A lower policy number has lower power
+ * consumption, and policy 2 is the default.
+ */
+#define CCU_POLICY_COUNT		4
+
+/*
+ * The exact frequencies provided by the CCU in specific policies
+ * are controlled through the frequency policies; there's a maximum
+ * of 8 policies, but this number varies depending on the CCU.
+ * The selected frequency policy also affects the voltage policy,
+ * so they share the same limit.
+ */
+#define CCU_FREQ_POLICY_COUNT_MAX	8
+
+/*
  * Utility macros for object flag management.  If possible, flags
  * should be defined such that 0 is the desired default value.
  */
@@ -38,6 +55,7 @@
 /* CCU field state tests */
 
 #define ccu_policy_exists(ccu_policy)	((ccu_policy)->enable.offset != 0)
+#define ccu_policy_has_freq(ccu_policy)	((ccu_policy)->freq.offset != 0)
 
 /* Clock field state tests */
 
@@ -462,9 +480,31 @@ struct bcm_policy_ctl {
 		.atl_bit = (_atl_bit),					\
 	}
 
+struct bcm_freq_policy {
+	/* POLICY_FREQ register offset */
+	u32 offset;
+
+	/* How many frequency policies this CCU has */
+	u32 policy_count;
+	/* Frequency tables for each frequency policy */
+	u32 *tables[CCU_FREQ_POLICY_COUNT_MAX];
+	/* How many frequencies there are in a freq table */
+	u32 table_size;
+
+	/*
+	 * Default frequency policy IDs for each CCU policy, written
+	 * during CCU initialization.  We use int here as it is
+	 * pre-filled with -1 in cases where the defaults aren't set.
+	 */
+	int defaults[CCU_POLICY_COUNT];
+};
+
+#define FREQ_TABLES(...)	{ __VA_ARGS__, NULL, }
+
 struct ccu_policy {
 	struct bcm_lvm_en enable;
 	struct bcm_policy_ctl control;
+	struct bcm_freq_policy freq;
 };
 
 /*
