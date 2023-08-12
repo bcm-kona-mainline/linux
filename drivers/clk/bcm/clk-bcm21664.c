@@ -55,11 +55,30 @@ static struct peri_clk_data pmu_bsc_data = {
 	.trig		= TRIGGER(0x0a40, 0),
 };
 
+static u32 aon_ccu_freq_tbl0[] = { 26000000, 26000000 };
+static u32 aon_ccu_freq_tbl1[] = { 52000000, 52000000 };
+static u32 aon_ccu_freq_tbl2[] = { 78000000, 78000000 };
+static u32 aon_ccu_freq_tbl3[] = { 104000000, 52000000 };
+static u32 aon_ccu_freq_tbl4[] = { 156000000, 78000000 };
+
 static struct ccu_data aon_ccu_data = {
 	BCM21664_CCU_COMMON(aon, AON),
 	.policy		= {
 		.enable		= CCU_LVM_EN(0x0034, 0),
 		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
+		.freq		= {
+			.offset = 0x0008,
+
+			.policy_count = 5,
+			.table_size = 2,
+			.tables = {
+				aon_ccu_freq_tbl0,
+				aon_ccu_freq_tbl1,
+				aon_ccu_freq_tbl2,
+				aon_ccu_freq_tbl3,
+				aon_ccu_freq_tbl4,
+			},
+		},
 	},
 	.kona_clks	= {
 		[BCM21664_AON_CCU_HUB_TIMER] =
@@ -162,11 +181,36 @@ static struct bus_clk_data usb_otg_ahb_data = {
 	.gate		= HW_SW_GATE(0x0348, 16, 0, 1),
 };
 
+static u32 master_ccu_freq_tbl0[] = { 26000000, 26000000, 26000000 };
+static u32 master_ccu_freq_tbl1[] = { 52000000, 52000000, 26000000 };
+static u32 master_ccu_freq_tbl2[] = { 104000000, 52000000, 26000000 };
+static u32 master_ccu_freq_tbl3[] = { 156000000, 52000000, 26000000 };
+static u32 master_ccu_freq_tbl4[] = { 156000000, 78000000, 39000000 };
+static u32 master_ccu_freq_tbl5[] = { 208000000, 104000000, 52000000 };
+static u32 master_ccu_freq_tbl6[] = { 312000000, 104000000, 52000000 };
+static u32 master_ccu_freq_tbl7[] = { 312000000, 156000000, 78000000 };
+
 static struct ccu_data master_ccu_data = {
 	BCM21664_CCU_COMMON(master, MASTER),
 	.policy		= {
 		.enable		= CCU_LVM_EN(0x0034, 0),
 		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
+		.freq		= {
+			.offset = 0x0008,
+
+			.policy_count = 8,
+			.table_size = 3,
+			.tables = {
+				master_ccu_freq_tbl0,
+				master_ccu_freq_tbl1,
+				master_ccu_freq_tbl2,
+				master_ccu_freq_tbl3,
+				master_ccu_freq_tbl4,
+				master_ccu_freq_tbl5,
+				master_ccu_freq_tbl6,
+				master_ccu_freq_tbl7,
+			},
+		},
 	},
 	.kona_clks	= {
 		[BCM21664_MASTER_CCU_SDIO1_AHB] =
@@ -303,11 +347,38 @@ static struct peri_clk_data bsc4_data = {
 	.trig		= TRIGGER(0x0afc, 19),
 };
 
+static u32 slave_ccu_freq_tbl0[] = \
+	{ 26000000, 26000000, 26000000, 26000000, 26000000 };
+static u32 slave_ccu_freq_tbl1[] = \
+	{ 52000000, 26000000, 26000000, 26000000, 26000000 };
+static u32 slave_ccu_freq_tbl2[] = \
+	{ 78000000, 39000000, 39000000, 39000000, 39000000 };
+static u32 slave_ccu_freq_tbl3[] = \
+	{ 104000000, 52000000, 52000000, 52000000, 52000000 };
+static u32 slave_ccu_freq_tbl4[] = \
+	{ 156000000, 52000000, 52000000, 52000000, 52000000 };
+static u32 slave_ccu_freq_tbl5[] = \
+	{ 156000000, 78000000, 78000000, 78000000, 78000000 };
+
 static struct ccu_data slave_ccu_data = {
 	BCM21664_CCU_COMMON(slave, SLAVE),
        .policy		= {
 		.enable		= CCU_LVM_EN(0x0034, 0),
 		.control	= CCU_POLICY_CTL(0x000c, 0, 1, 2),
+		.freq		= {
+			.offset = 0x0008,
+
+			.policy_count = 6,
+			.table_size = 5,
+			.tables = {
+				slave_ccu_freq_tbl0,
+				slave_ccu_freq_tbl1,
+				slave_ccu_freq_tbl2,
+				slave_ccu_freq_tbl3,
+				slave_ccu_freq_tbl4,
+				slave_ccu_freq_tbl5,
+			},
+		},
 	},
 	.kona_clks	= {
 		[BCM21664_SLAVE_CCU_UARTB_APB] =
