@@ -1270,6 +1270,7 @@ static bool __bus_clk_init(struct kona_clk *bcm_clk)
 {
 	struct ccu_data *ccu = bcm_clk->ccu;
 	struct bus_clk_data *bus = bcm_clk->u.bus;
+	struct bcm_clk_gate *gate = &bcm_clk->u.bus->gate;
 	const char *name = bcm_clk->init_data.name;
 
 	BUG_ON(bcm_clk->type != bcm_clk_bus);
@@ -1287,6 +1288,9 @@ static bool __bus_clk_init(struct kona_clk *bcm_clk)
 		pr_err("%s: error initializing hyst for %s\n", __func__, name);
 		return false;
 	}
+
+	/* HACK: force enable at init */
+	__clk_gate(ccu, gate, true);
 
 	return true;
 }
