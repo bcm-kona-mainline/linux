@@ -30,6 +30,7 @@ static struct ccu_data root_ccu_data = {
 /* AON CCU */
 
 static struct peri_clk_data hub_timer_data = {
+	.policy		= POLICY(0x0010, 6),
 	.gate		= HW_SW_GATE(0x0414, 16, 0, 1),
 	.hyst		= HYST(0x0414, 8, 9),
 	.clocks		= CLOCKS("bbl_32k",
@@ -45,6 +46,7 @@ static struct bus_clk_data pmu_bsc_apb_data = {
 };
 
 static struct peri_clk_data pmu_bsc_data = {
+	.policy		= POLICY(0x0010, 8),
 	.gate		= HW_SW_GATE(0x0418, 16, 0, 1),
 	.hyst		= HYST(0x0418, 8, 9),
 	.clocks		= CLOCKS("ref_crystal",
@@ -94,22 +96,27 @@ static struct ccu_data aon_ccu_data = {
 /* Master CCU */
 
 static struct bus_clk_data sdio1_ahb_data = {
+	.policy		= POLICY(0x0010, 6),
 	.gate		= HW_SW_GATE(0x0358, 16, 0, 1),
 };
 
 static struct bus_clk_data sdio2_ahb_data = {
+	.policy		= POLICY(0x0010, 5),
 	.gate		= HW_SW_GATE(0x035c, 16, 0, 1),
 };
 
 static struct bus_clk_data sdio3_ahb_data = {
+	.policy		= POLICY(0x0010, 3),
 	.gate		= HW_SW_GATE(0x0364, 16, 0, 1),
 };
 
 static struct bus_clk_data sdio4_ahb_data = {
+	.policy		= POLICY(0x0010, 4),
 	.gate		= HW_SW_GATE(0x0360, 16, 0, 1),
 };
 
 static struct peri_clk_data sdio1_data = {
+	.policy		= POLICY(0x0010, 6),
 	.gate		= HW_SW_GATE(0x0358, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_52m",
@@ -122,6 +129,7 @@ static struct peri_clk_data sdio1_data = {
 };
 
 static struct peri_clk_data sdio2_data = {
+	.policy		= POLICY(0x0010, 5),
 	.gate		= HW_SW_GATE(0x035c, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_52m",
@@ -134,6 +142,7 @@ static struct peri_clk_data sdio2_data = {
 };
 
 static struct peri_clk_data sdio3_data = {
+	.policy		= POLICY(0x0010, 3),
 	.gate		= HW_SW_GATE(0x0364, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_52m",
@@ -146,6 +155,7 @@ static struct peri_clk_data sdio3_data = {
 };
 
 static struct peri_clk_data sdio4_data = {
+	.policy		= POLICY(0x0010, 4),
 	.gate		= HW_SW_GATE(0x0360, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_52m",
@@ -178,6 +188,7 @@ static struct peri_clk_data sdio4_sleep_data = {
 };
 
 static struct bus_clk_data usb_otg_ahb_data = {
+	.policy		= POLICY(0x0010, 11),
 	.gate		= HW_SW_GATE(0x0348, 16, 0, 1),
 };
 
@@ -258,6 +269,7 @@ static struct bus_clk_data uartb3_apb_data = {
 };
 
 static struct peri_clk_data uartb_data = {
+	.policy		= POLICY(0x0010, 20),
 	.gate		= HW_SW_GATE(0x0400, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_156m",
@@ -268,6 +280,7 @@ static struct peri_clk_data uartb_data = {
 };
 
 static struct peri_clk_data uartb2_data = {
+	.policy		= POLICY(0x0010, 19),
 	.gate		= HW_SW_GATE(0x0404, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_156m",
@@ -278,6 +291,7 @@ static struct peri_clk_data uartb2_data = {
 };
 
 static struct peri_clk_data uartb3_data = {
+	.policy		= POLICY(0x0010, 18),
 	.gate		= HW_SW_GATE(0x0408, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_156m",
@@ -304,6 +318,7 @@ static struct bus_clk_data bsc4_apb_data = {
 };
 
 static struct peri_clk_data bsc1_data = {
+	.policy		= POLICY(0x0010, 24),
 	.gate		= HW_SW_GATE(0x0458, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_104m",
@@ -315,6 +330,7 @@ static struct peri_clk_data bsc1_data = {
 };
 
 static struct peri_clk_data bsc2_data = {
+	.policy		= POLICY(0x0010, 23),
 	.gate		= HW_SW_GATE(0x045c, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_104m",
@@ -326,6 +342,7 @@ static struct peri_clk_data bsc2_data = {
 };
 
 static struct peri_clk_data bsc3_data = {
+	.policy		= POLICY(0x0010, 29),
 	.gate		= HW_SW_GATE(0x0470, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_104m",
@@ -337,6 +354,7 @@ static struct peri_clk_data bsc3_data = {
 };
 
 static struct peri_clk_data bsc4_data = {
+	.policy		= POLICY(0x0010, 30),
 	.gate		= HW_SW_GATE(0x0474, 18, 2, 3),
 	.clocks		= CLOCKS("ref_crystal",
 				 "var_104m",
