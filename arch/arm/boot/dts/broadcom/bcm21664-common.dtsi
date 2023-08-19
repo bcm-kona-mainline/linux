@@ -315,6 +315,8 @@
 			clock-output-names = "hub_timer",
 					     "pmu_bsc_apb",
 					     "pmu_bsc";
+			/* ECO, ECO, NORMAL, NORMAL */
+			brcm,freq-policy-defaults = <0 0 1 1>;
 		};
 
 		slave_ccu: slave_ccu@3e011000 {
@@ -335,6 +337,8 @@
 					     "bsc2",
 					     "bsc3",
 					     "bsc4";
+			/* ECO, ECO, NORMAL, NORMAL */
+			brcm,freq-policy-defaults = <0 0 1 1>;
 		};
 
 		master_ccu: master_ccu@3f001000 {
@@ -354,6 +358,8 @@
 					     "sdio3_sleep",
 					     "sdio4_sleep",
 					     "usb_otg_ahb";
+			/* ECO, ECO, NORMAL, NORMAL */
+			brcm,freq-policy-defaults = <0 0 2 2>;
 		};
 	};
 };
