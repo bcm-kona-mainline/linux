@@ -38,6 +38,15 @@ struct bcm590xx_reg {
 #define BCM590XX_LDO_VSEL_MASK		GENMASK(5, 3)
 #define BCM590XX_SR_VSEL_MASK		GENMASK(5, 0)
 
+#define BCM590XX_PMMODE_ON		0x0
+#define BCM590XX_PMMODE_LPM		0x1
+#define BCM590XX_PMMODE_OFF		0x2
+
+#define PMMODE_3BIT_MASK(mode)						\
+	((mode << 3) | mode)
+#define PMMODE_2BIT_MASK(mode)						\
+	((mode << 6) | (mode << 4) | (mode << 2) | mode)
+
 /* BCM59056 registers */
 
 /* I2C slave 0 registers */
@@ -444,7 +453,7 @@ static int bcm590xx_get_vsel_register(struct bcm590xx_reg *pmu, int id)
 	return -EINVAL;
 }
 
-static int bcm59054_get_enable_register(struct bcm590xx_reg *pmu, int id)
+static int bcm59054_get_pmctrl_register(struct bcm590xx_reg *pmu, int id)
 {
 	int reg = 0;
 
@@ -483,7 +492,7 @@ static int bcm59054_get_enable_register(struct bcm590xx_reg *pmu, int id)
 	return reg;
 }
 
-static int bcm59056_get_enable_register(struct bcm590xx_reg *pmu, int id)
+static int bcm59056_get_pmctrl_register(struct bcm590xx_reg *pmu, int id)
 {
 	int reg = 0;
 
@@ -522,13 +531,13 @@ static int bcm59056_get_enable_register(struct bcm590xx_reg *pmu, int id)
 	return reg;
 }
 
-static int bcm590xx_get_enable_register(struct bcm590xx_reg *pmu, int id)
+static int bcm590xx_get_pmctrl_register(struct bcm590xx_reg *pmu, int id)
 {
 	switch (pmu->mfd->device_type) {
 	case BCM59054_TYPE:
-		return bcm59054_get_enable_register(pmu, id);
+		return bcm59054_get_pmctrl_register(pmu, id);
 	case BCM59056_TYPE:
-		return bcm59056_get_enable_register(pmu, id);
+		return bcm59056_get_pmctrl_register(pmu, id);
 	}
 	return -EINVAL;
 }
@@ -541,10 +550,73 @@ static int bcm590xx_get_enable_mask(struct bcm590xx_reg *pmu, int id)
 	return BCM590XX_REG_ENABLE;
 }
 
+/*
+ * The state of BCM590XX regulators is controlled by the PM mode; most
+ * have 3 such modes (off, low-power and on), but some have more.
+ *
+ * These modes are then stored in the PMCTRL registers - there are 7
+ * PMMODE entries within these registers for any given regulator.
+ * Which one is selected is decided by the PC1 and PC2 pins (and the
+ * optional PC3 pin, if configured).
+ *
+ * For simplicity, to set a PM mode, we write it to all available
+ * PMMODE registers.
+ */
+static int
+_bcm590xx_set_pmmode(struct bcm590xx_reg *pmu, int reg_id, unsigned int mode)
+{
+	struct regmap *regmap;
+	u8 pmctrl_addr = bcm590xx_get_pmctrl_register(pmu, reg_id);
+	unsigned int i;
+	int pmctrl_count;
+	int mode_mask;
+	int ret;
+
+	/*
+	 * Regulators using 2-bit mode controls have 2 PMCTRL registers;
+	 * regulators using 3-bit mode controls have 4 PMCTRL registers.
+	 * This is to accomodate all 7 selectable modes.
+	 */
+	if (bcm590xx_reg_mode_is_3bit(pmu, reg_id)) {
+		pmctrl_count = 4;
+		mode_mask = PMMODE_3BIT_MASK(mode);
+	} else {
+		pmctrl_count = 2;
+		mode_mask = PMMODE_2BIT_MASK(mode);
+	}
+
+	if (bcm590xx_reg_is_secondary(pmu, reg_id))
+		regmap = pmu->mfd->regmap_sec;
+	else
+		regmap = pmu->mfd->regmap_pri;
+
+	for (i = 0; i < pmctrl_count; i++) {
+		ret = regmap_write(regmap, pmctrl_addr + i, mode_mask);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+static int bcm590xx_regulator_enable(struct regulator_dev *rdev)
+{
+	struct bcm590xx_reg *pmu = rdev->reg_data;
+
+	return _bcm590xx_set_pmmode(pmu, rdev->desc->id, BCM590XX_PMMODE_ON);
+}
+
+static int bcm590xx_regulator_disable(struct regulator_dev *rdev)
+{
+	struct bcm590xx_reg *pmu = rdev->reg_data;
+
+	return _bcm590xx_set_pmmode(pmu, rdev->desc->id, BCM590XX_PMMODE_OFF);
+}
+
 static const struct regulator_ops bcm590xx_ops_ldo = {
 	.is_enabled		= regulator_is_enabled_regmap,
-	.enable			= regulator_enable_regmap,
-	.disable		= regulator_disable_regmap,
+	.enable			= bcm590xx_regulator_enable,
+	.disable		= bcm590xx_regulator_disable,
 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
 	.list_voltage		= regulator_list_voltage_table,
@@ -553,8 +625,8 @@ static const struct regulator_ops bcm590xx_ops_ldo = {
 
 static const struct regulator_ops bcm590xx_ops_dcdc = {
 	.is_enabled		= regulator_is_enabled_regmap,
-	.enable			= regulator_enable_regmap,
-	.disable		= regulator_disable_regmap,
+	.enable			= bcm590xx_regulator_enable,
+	.disable		= bcm590xx_regulator_disable,
 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
 	.list_voltage		= regulator_list_voltage_linear_range,
@@ -563,8 +635,8 @@ static const struct regulator_ops bcm590xx_ops_dcdc = {
 
 static const struct regulator_ops bcm590xx_ops_static = {
 	.is_enabled		= regulator_is_enabled_regmap,
-	.enable			= regulator_enable_regmap,
-	.disable		= regulator_disable_regmap,
+	.enable			= bcm590xx_regulator_enable,
+	.disable		= bcm590xx_regulator_disable,
 };
 
 static int bcm590xx_probe(struct platform_device *pdev)
@@ -633,7 +705,7 @@ static int bcm590xx_probe(struct platform_device *pdev)
 			pmu->desc[i].enable_is_inverted = true;
 		}
 		pmu->desc[i].enable_reg = \
-			bcm590xx_get_enable_register(pmu, i);
+			bcm590xx_get_pmctrl_register(pmu, i);
 		pmu->desc[i].type = REGULATOR_VOLTAGE;
 		pmu->desc[i].owner = THIS_MODULE;
 
