@@ -5,6 +5,7 @@ dtb-$(CONFIG_ARCH_EXYNOS3) += \
 	exynos3250-rinato.dtb
 dtb-$(CONFIG_ARCH_EXYNOS4) += \
 	exynos4210-i9100.dtb \
+	exynos4210-n7000.dtb \
 	exynos4210-origen.dtb \
 	exynos4210-smdkv310.dtb \
 	exynos4210-trats.dtb \
