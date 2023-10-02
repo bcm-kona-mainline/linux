@@ -108,6 +108,15 @@
 		};
 	};
 
+	lcd_vcc_22v_reg: regulator-lcd-vcc-22v {
+		compatible = "regulator-fixed";
+		regulator-name = "LCD_2.2V";
+		regulator-min-microvolt = <2200000>;
+		regulator-max-microvolt = <2200000>;
+		gpio = <&gpy3 1 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
 	tsp_18v_reg: regulator-tsp-18v {
 		compatible = "regulator-fixed";
 		regulator-name = "TSP_FIXED_VOLTAGES_1.8V";
@@ -163,6 +172,64 @@
 	};
 };
 
+&dsi_0 {
+	vddcore-supply = <&vmipi_11v_reg>;
+	vddio-supply = <&vmipi_18v_reg>;
+	samsung,burst-clock-frequency = <500000000>;
+	samsung,esc-clock-frequency = <20000000>;
+	samsung,pll-clock-frequency = <24000000>;
+
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@1 {
+			reg = <1>;
+
+			dsi_out: endpoint@0 {
+				samsung,burst-clock-frequency = <500000000>;
+				samsung,esc-clock-frequency = <20000000>;
+				remote-endpoint = <&dsi_in>;
+			};
+		};
+	};
+
+	panel@0 {
+		compatible = "samsung,s6e8aa0";
+		reg = <0>;
+		vdd3-supply = <&lcd_vcc_22v_reg>;
+		vci-supply = <&vcclcd_reg>;
+		reset-gpios = <&gpy4 5 GPIO_ACTIVE_HIGH>;
+		power-on-delay = <50>;
+		reset-delay = <100>;
+		init-delay = <100>;
+		panel-width-mm = <64>;
+		panel-height-mm = <106>;
+
+		display-timings {
+			timing-0 {
+				clock-frequency = <57153600>;
+				hactive = <800>;
+				vactive = <1280>;
+				hfront-porch = <10>;
+				hback-porch = <10>;
+				hsync-len = <10>;
+				vfront-porch = <13>;
+				vback-porch = <1>;
+				vsync-len = <2>;
+			};
+		};
+
+		port {
+			dsi_in: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+};
+
 &ehci {
 	phys = <&exynos_usbphy 1>;
 	phy-names = "host";
@@ -172,6 +239,16 @@
 
 &exynos_usbphy {
 	vbus-supply = <&safe1_sreg>;
+
+	status = "okay";
+};
+
+&fimd {
+	status = "okay";
+};
+
+&gpu {
+	mali-supply = <&vg3d_breg>;
 
 	status = "okay";
 };
