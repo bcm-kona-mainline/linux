@@ -184,6 +184,33 @@
 	status = "okay";
 };
 
+&i2c_1 {
+	samsung,i2c-sda-delay = <100>;
+	samsung,i2c-slave-addr = <0x10>;
+	samsung,i2c-max-bus-freq = <100000>;
+
+	status = "okay";
+
+	accelerometer@19 {
+		compatible = "st,lis3dh-accel";
+		reg = <0x19>;
+
+		vdd-supply = <&vccpda_reg>;
+		vddio-supply = <&vccpda_reg>;
+
+		interrupts-extended = <&gpx3 0 IRQ_TYPE_LEVEL_HIGH>;
+
+		st,drdy-int-pin = <1>;
+
+		mount-matrix = "0", "1", "0",
+			       "1", "0", "0",
+			       "0", "0", "1";
+
+		pinctrl-0 = <&accel_int>;
+		pinctrl-names = "default";
+	};
+};
+
 &i2c_3 {
 	samsung,i2c-sda-delay = <100>;
 	samsung,i2c-slave-addr = <0x10>;
@@ -487,6 +514,11 @@
 };
 
 &pinctrl_1 {
+	accel_int: accel-int-pins {
+		samsung,pins = "gpx3-0";
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+	};
+
 	usb_sel: usb-sel-pins {
 		samsung,pins = "gpl0-6";
 		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
