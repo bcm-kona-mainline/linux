@@ -82,6 +82,13 @@ static const struct touchkey_variant tc360_touchkey_variant = {
 	.cmd_led_off = TM2_TOUCHKEY_CMD_LED_OFF,
 };
 
+static const struct touchkey_variant q1_touchkey_variant = {
+	.no_reg = true,
+	.fixed_regulator = true,
+	.cmd_led_on = TM2_TOUCHKEY_CMD_LED_ON,
+	.cmd_led_off = TM2_TOUCHKEY_CMD_LED_OFF,
+};
+
 static int tm2_touchkey_led_brightness_set(struct led_classdev *led_dev,
 					    enum led_brightness brightness)
 {
@@ -344,6 +351,9 @@ static const struct of_device_id tm2_touchkey_of_match[] = {
 	}, {
 		.compatible = "coreriver,tc360-touchkey",
 		.data = &tc360_touchkey_variant,
+	}, {
+		.compatible = "cypress,q1-touchkey",
+		.data = &q1_touchkey_variant,
 	},
 	{ },
 };
