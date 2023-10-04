@@ -108,6 +108,28 @@
 		};
 	};
 
+	tsp_18v_reg: regulator-tsp-18v {
+		compatible = "regulator-fixed";
+		regulator-name = "TSP_FIXED_VOLTAGES_1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&gpl0 3 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	tsp_30v_reg: regulator-tsp-33v {
+		compatible = "regulator-fixed";
+		regulator-name = "TSP_FIXED_VOLTAGES_3.0V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpl0 3 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <70000>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
 	vemmc_reg: regulator-vemmc {
 		compatible = "regulator-fixed";
 		regulator-name = "VMEM_VDD_2.8V";
@@ -160,6 +182,27 @@
 	vusb_a-supply = <&vusbdac_reg>;
 
 	status = "okay";
+};
+
+&i2c_3 {
+	samsung,i2c-sda-delay = <100>;
+	samsung,i2c-slave-addr = <0x10>;
+	samsung,i2c-max-bus-freq = <100000>;
+
+	status = "okay";
+
+	touchscreen@4c {
+		compatible = "atmel,maxtouch";
+		reg = <0x4c>;
+
+		vdd-supply = <&tsp_18v_reg>;
+		vdda-supply = <&tsp_30v_reg>;
+
+		interrupts-extended = <&gpx0 4 IRQ_TYPE_EDGE_FALLING>;
+
+		pinctrl-0 = <&tsp540e_irq>;
+		pinctrl-names = "default";
+	};
 };
 
 &i2c_5 {
@@ -484,6 +527,11 @@
 	max17042_fuel_irq: max17042-fuel-irq-pins {
 		samsung,pins = "gpx2-3";
 		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+	};
+
+	tsp540e_irq: tsp540e-irq-pins {
+		samsung,pins = "gpx0-4";
+		samsung,pin-pud = <EXYNOS_PIN_PULL_UP>;
 	};
 };
 
