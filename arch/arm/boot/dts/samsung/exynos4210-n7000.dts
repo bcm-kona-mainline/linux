@@ -108,6 +108,32 @@
 		};
 	};
 
+	i2c-tkey {
+		compatible = "i2c-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		sda-gpios = <&gpk1 2 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+		scl-gpios = <&gpk1 0 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+		i2c-gpio,delay-us = <5>;
+
+		touchkey@20 {
+			compatible = "cypress,q1-touchkey";
+			reg = <0x20>;
+
+			interrupt-parent = <&gpl0>;
+			interrupts = <5 IRQ_TYPE_EDGE_FALLING>;
+
+			vcc-supply = <&vtouch_reg>;
+			vdd-supply = <&vtouchled_reg>;
+
+			linux,keycodes = <KEY_APPSELECT KEY_BACK>;
+
+			pinctrl-0 = <&tkey_int>;
+			pinctrl-names = "default";
+		};
+	};
+
 	lcd_vcc_22v_reg: regulator-lcd-vcc-22v {
 		compatible = "regulator-fixed";
 		regulator-name = "LCD_2.2V";
@@ -635,6 +661,11 @@
 
 	max17042_fuel_irq: max17042-fuel-irq-pins {
 		samsung,pins = "gpx2-3";
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+	};
+
+	tkey_int: tkey-int-pins {
+		samsung,pins = "gpl0-5";
 		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
 	};
 
