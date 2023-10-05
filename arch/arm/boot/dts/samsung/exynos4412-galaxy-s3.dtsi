@@ -133,6 +133,53 @@
 	};
 };
 
+&i2c_1 {
+	samsung,i2c-sda-delay = <100>;
+	samsung,i2c-slave-addr = <0x10>;
+	samsung,i2c-max-bus-freq = <100000>;
+
+	pinctrl-0 = <&i2c1_bus>;
+	pinctrl-names = "default";
+
+	status = "okay";
+
+	accelerometer@19 {
+		compatible = "st,lsm330dlc-accel";
+		reg = <0x19>;
+
+		vdd-supply = <&ldo4_reg>;
+		vddio-supply = <&ldo3_reg>;
+
+		interrupt-parent = <&gpx1>;
+		interrupts = <4 IRQ_TYPE_LEVEL_HIGH>;
+
+		st,drdy-int-pin = <1>;
+
+		pinctrl-0 = <&accel_int>;
+		pinctrl-names = "default";
+
+		mount-matrix = "-1", "0", "0",
+			       "0", "-1", "0",
+			       "0", "0", "1";
+	};
+
+	gyroscope@6b {
+		compatible = "st,lsm330dlc-gyro";
+		reg = <0x6b>;
+
+		vdd-supply = <&ldo4_reg>;
+		vddio-supply = <&ldo3_reg>;
+
+		interrupt-parent = <&gpx0>;
+		interrupts = <0 IRQ_TYPE_LEVEL_HIGH>;
+
+		st,drdy-int-pin = <2>;
+
+		pinctrl-0 = <&gyro_int>;
+		pinctrl-names = "default";
+	};
+};
+
 &i2c_3 {
 	touchscreen@48 {
 		compatible = "melfas,mms114";
@@ -157,6 +204,18 @@
 		samsung,pins = "gpj1-0";
 		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
 		samsung,pin-val = <1>;
+	};
+};
+
+&pinctrl_1 {
+	accel_int: accel-int-pins {
+		samsung,pins = "gpx1-4";
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+	};
+
+	gyro_int: gyro-int-pins {
+		samsung,pins = "gpx0-0";
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
 	};
 };
 
