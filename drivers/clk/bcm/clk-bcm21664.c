@@ -41,6 +41,7 @@ static struct peri_clk_data hub_timer_data = {
 };
 
 static struct bus_clk_data pmu_bsc_apb_data = {
+	.policy		= POLICY(0x0010, 8),
 	.gate		= HW_SW_GATE(0x0418, 18, 2, 3),
 	.hyst		= HYST(0x0418, 10, 11),
 };
@@ -257,14 +258,17 @@ static struct ccu_data master_ccu_data = {
 /* Slave CCU */
 
 static struct bus_clk_data uartb_apb_data = {
+	.policy		= POLICY(0x0010, 20),
 	.gate		= HW_SW_GATE_AUTO(0x0400, 16, 0, 1),
 };
 
 static struct bus_clk_data uartb2_apb_data = {
+	.policy		= POLICY(0x0010, 19),
 	.gate		= HW_SW_GATE_AUTO(0x0404, 16, 0, 1),
 };
 
 static struct bus_clk_data uartb3_apb_data = {
+	.policy		= POLICY(0x0010, 18),
 	.gate		= HW_SW_GATE_AUTO(0x0408, 16, 0, 1),
 };
 
@@ -302,19 +306,27 @@ static struct peri_clk_data uartb3_data = {
 };
 
 static struct bus_clk_data bsc1_apb_data = {
-	.gate = HW_SW_GATE_AUTO(0x0458, 16, 0, 1),
+	.policy		= POLICY(0x0010, 24),
+	.gate		= HW_SW_GATE_AUTO(0x0458, 16, 0, 1),
+	.hyst		= HYST(0x0458, 8, 9),
 };
 
 static struct bus_clk_data bsc2_apb_data = {
-	.gate = HW_SW_GATE_AUTO(0x045c, 16, 0, 1),
+	.policy		= POLICY(0x0010, 23),
+	.gate		= HW_SW_GATE_AUTO(0x045c, 16, 0, 1),
+	.hyst		= HYST(0x045c, 8, 9),
 };
 
 static struct bus_clk_data bsc3_apb_data = {
-	.gate = HW_SW_GATE_AUTO(0x0470, 16, 0, 1),
+	.policy		= POLICY(0x0010, 29),
+	.gate		= HW_SW_GATE_AUTO(0x0470, 16, 0, 1),
+	.hyst		= HYST(0x0470, 8, 9),
 };
 
 static struct bus_clk_data bsc4_apb_data = {
-	.gate = HW_SW_GATE_AUTO(0x0474, 16, 0, 1),
+	.policy		= POLICY(0x0010, 30),
+	.gate		= HW_SW_GATE_AUTO(0x0474, 16, 0, 1),
+	.hyst		= HYST(0x0474, 8, 9),
 };
 
 static struct peri_clk_data bsc1_data = {
