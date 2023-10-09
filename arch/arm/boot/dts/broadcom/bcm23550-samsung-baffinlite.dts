@@ -4,6 +4,7 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
 
 #include "bcm23550.dtsi"
 
@@ -52,6 +53,14 @@
 			gpios = <&gpio 11 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_VOLUMEDOWN>;
 		};
+	};
+
+	led-heartbeat {
+		compatible = "regulator-led";
+		vled-supply = <&gpldo3_reg>;
+		function = LED_FUNCTION_STATUS;
+		color = <LED_COLOR_ID_WHITE>;
+		linux,default-trigger = "heartbeat";
 	};
 
 	/* USB switch */
@@ -156,12 +165,29 @@
 	touchscreen@48 {
 		compatible = "melfas,mms136";
 		reg = <0x48>;
-		clock-frequency = <230000>;
+		pinctrl-0 = <&tsp_pins>;
+		pinctrl-names = "default";
 		interrupt-parent = <&gpio>;
 		interrupts = <73 IRQ_TYPE_EDGE_FALLING>;
 		vdd-supply = <&gpldo2_reg>;
+		avdd-supply = <&iosr1_reg>;
 		touchscreen-size-x = <480>;
 		touchscreen-size-y = <800>;
+	};
+};
+
+&pinctrl {
+	pmu_pins: pmu-pins {
+		pins = "pc1", "pc2";
+		function = "alt1"; /* PC1 */
+		bias-pull-down;
+		input-disable; /* output only */
+	};
+
+	tsp_pins: tsp-pins {
+		pins = "mmc1dat5";
+		function = "alt5"; /* GPIO73 */
+		input-enable;	
 	};
 };
 
@@ -170,6 +196,9 @@
 	status = "okay";
 
 	pmu: pmu@8 {
+		/*pinctrl-0 = <&pmu_pins>;
+		pinctrl-names = "default";*/
+
 		compatible = "brcm,bcm59054";
 		reg = <0x08>;
 		interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>,
@@ -264,7 +293,7 @@
 			};
 
 			gpldo3_reg: gpldo3 {
-				regulator-min-microvolt = <1200000>;
+				regulator-min-microvolt = <3300000>; /* technically 1.2v but 3v3 is required for led */
 				regulator-max-microvolt = <3300000>;
 			};
 
