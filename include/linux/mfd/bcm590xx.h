@@ -14,7 +14,7 @@
 #include <linux/regmap.h>
 
 /* device types */
-enum {
+enum bcm590xx_device_type {
 	BCM59054_TYPE,
 	BCM59056_TYPE,
 };
@@ -25,7 +25,7 @@ enum {
 
 struct bcm590xx {
 	struct device *dev;
-	unsigned int device_type;
+	enum bcm590xx_device_type device_type;
 	struct i2c_client *i2c_pri;
 	struct i2c_client *i2c_sec;
 	struct regmap *regmap_pri;

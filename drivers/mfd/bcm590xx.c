@@ -14,7 +14,6 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/of.h>
-#include <linux/of_device.h>
 #include <linux/regmap.h>
 #include <linux/slab.h>
 
@@ -41,6 +40,7 @@ static const struct regmap_config bcm590xx_regmap_config_sec = {
 static int bcm590xx_i2c_probe(struct i2c_client *i2c_pri)
 {
 	struct bcm590xx *bcm590xx;
+	uintptr_t type;
 	int ret;
 
 	bcm590xx = devm_kzalloc(&i2c_pri->dev, sizeof(*bcm590xx), GFP_KERNEL);
@@ -51,7 +51,12 @@ static int bcm590xx_i2c_probe(struct i2c_client *i2c_pri)
 	bcm590xx->dev = &i2c_pri->dev;
 	bcm590xx->i2c_pri = i2c_pri;
 
-	bcm590xx->device_type = (unsigned int)of_device_get_match_data(bcm590xx->dev);
+	type = (uintptr_t)of_device_get_match_data(bcm590xx->dev);
+	if (!type) {
+		dev_err(&i2c_pri->dev, "failed to get OF match data");
+		return -ENODEV;
+	}
+	bcm590xx->device_type = type;
 
 	bcm590xx->regmap_pri = devm_regmap_init_i2c(i2c_pri,
 						 &bcm590xx_regmap_config_pri);
@@ -101,7 +106,8 @@ static const struct of_device_id bcm590xx_of_match[] = {
 MODULE_DEVICE_TABLE(of, bcm590xx_of_match);
 
 static const struct i2c_device_id bcm590xx_i2c_id[] = {
-	{ "bcm59056" },
+	{ "bcm59054", BCM59054_TYPE },
+	{ "bcm59056", BCM59056_TYPE },
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, bcm590xx_i2c_id);
@@ -111,7 +117,7 @@ static struct i2c_driver bcm590xx_i2c_driver = {
 		   .name = "bcm590xx",
 		   .of_match_table = bcm590xx_of_match,
 	},
-	.probe_new = bcm590xx_i2c_probe,
+	.probe = bcm590xx_i2c_probe,
 	.id_table = bcm590xx_i2c_id,
 };
 module_i2c_driver(bcm590xx_i2c_driver);
