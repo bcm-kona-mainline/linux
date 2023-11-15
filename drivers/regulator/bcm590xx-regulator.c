@@ -86,15 +86,15 @@ static const struct regulator_ops bcm590xx_ops_vbus = {
 #define BCM590XX_LDO_DESC(_model, _name, _name_lower, _table)		\
 	BCM590XX_REG_DESC(_model, _name, _name_lower),			\
 	.ops = &bcm590xx_ops_ldo,					\
-	.n_voltages = ARRAY_SIZE(_table),				\
-	.volt_table = _table,						\
+	.n_voltages = ARRAY_SIZE(##_table),				\
+	.volt_table = ##_table,						\
 	.vsel_reg = _model##_##_name##CTRL,				\
 	.vsel_mask = BCM590XX_LDO_VSEL_MASK,				\
 	.enable_reg = _model##_##_name##PMCTRL1,			\
 	.enable_mask = BCM590XX_REG_ENABLE,				\
 	.enable_is_inverted = true
 
-#define BCM590XX_SR_DESC(_model, _name, _name_lower, _ranges)		\
+#define BCM590XX_SR_DESC(_model, _model_lower, _name, _name_lower, _ranges) \
 	BCM590XX_REG_DESC(_model, _name, _name_lower),			\
 	.ops = &bcm590xx_ops_dcdc,					\
 	.n_voltages = 64,						\
@@ -107,11 +107,11 @@ static const struct regulator_ops bcm590xx_ops_vbus = {
 	.enable_is_inverted = true
 
 #define BCM59056_REG_DESC(_name, _name_lower)				\
-	BCM590XX_REG_DESC(BCM59056, _name, _name_lower)
+	BCM590XX_REG_DESC(BCM59056, bcm59056, _name, _name_lower)
 #define BCM59056_LDO_DESC(_name, _name_lower, _table)			\
-	BCM590XX_LDO_DESC(BCM59056, _name, _name_lower, _table)
+	BCM590XX_LDO_DESC(BCM59056, bcm59056, _name, _name_lower, _table)
 #define BCM59056_SR_DESC(_name, _name_lower, _ranges)			\
-	BCM590XX_SR_DESC(BCM59056, _name, _name_lower, _ranges)
+	BCM590XX_SR_DESC(BCM59056, bcm59056, _name, _name_lower, _ranges)
 
 /* BCM59056 data */
 
@@ -217,30 +217,30 @@ static const struct regulator_ops bcm590xx_ops_vbus = {
 #define BCM59056_NUM_REGS	27
 
 /* LDO group A: supported voltages in microvolts */
-static const unsigned int ldo_a_table[] = {
+static const unsigned int bcm59056_ldo_a_table[] = {
 	1200000, 1800000, 2500000, 2700000, 2800000,
 	2900000, 3000000, 3300000,
 };
 
 /* LDO group C: supported voltages in microvolts */
-static const unsigned int ldo_c_table[] = {
+static const unsigned int bcm59056_ldo_c_table[] = {
 	3100000, 1800000, 2500000, 2700000, 2800000,
 	2900000, 3000000, 3300000,
 };
 
-static const unsigned int ldo_vbus[] = {
+static const unsigned int bcm59056_ldo_vbus[] = {
 	5000000,
 };
 
 /* DCDC group CSR: supported voltages in microvolts */
-static const struct linear_range dcdc_csr_ranges[] = {
+static const struct linear_range bcm59056_dcdc_csr_ranges[] = {
 	REGULATOR_LINEAR_RANGE(860000, 2, 50, 10000),
 	REGULATOR_LINEAR_RANGE(1360000, 51, 55, 20000),
 	REGULATOR_LINEAR_RANGE(900000, 56, 63, 0),
 };
 
 /* DCDC group IOSR1: supported voltages in microvolts */
-static const struct linear_range dcdc_iosr1_ranges[] = {
+static const struct linear_range bcm59056_dcdc_iosr1_ranges[] = {
 	REGULATOR_LINEAR_RANGE(860000, 2, 51, 10000),
 	REGULATOR_LINEAR_RANGE(1500000, 52, 52, 0),
 	REGULATOR_LINEAR_RANGE(1800000, 53, 53, 0),
@@ -248,7 +248,7 @@ static const struct linear_range dcdc_iosr1_ranges[] = {
 };
 
 /* DCDC group SDSR1: supported voltages in microvolts */
-static const struct linear_range dcdc_sdsr1_ranges[] = {
+static const struct linear_range bcm59056_dcdc_sdsr1_ranges[] = {
 	REGULATOR_LINEAR_RANGE(860000, 2, 50, 10000),
 	REGULATOR_LINEAR_RANGE(1340000, 51, 51, 0),
 	REGULATOR_LINEAR_RANGE(900000, 52, 63, 0),
@@ -470,7 +470,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 			BCM59056_REG_DESC(VBUS, vbus),
 			.ops = &bcm590xx_ops_vbus,
 			.n_voltages = 1,
-			.volt_table = ldo_vbus,
+			.volt_table = bcm59056_ldo_vbus,
 			.enable_reg = BCM59056_OTG_CTRL,
 			.enable_mask = BCM590XX_VBUS_ENABLE,
 		},
