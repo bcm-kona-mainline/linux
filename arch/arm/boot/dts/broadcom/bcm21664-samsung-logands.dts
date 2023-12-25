@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2014 Broadcom Corporation
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+
+#include "bcm21664.dtsi"
+
+/ {
+	model = "Samsung Galaxy Ace 3 Duos (GT-S7272)";
+	compatible = "brcm,bcm21664-logands", "brcm,bcm21664";
+
+	chosen {
+		bootargs = "console=ttyS2,115200n8";
+		// bootargs = "console=ttyS2,115200n8 mem=736M gpt pmem=200M carveout=32M androidboot.console=ttyS2 crash_ramdump=1 logbuf_nocache=1";
+	};
+
+	memory@82000000 {
+		device_type = "memory";
+		reg = <0x82000000 0x2e000000>; /* 736 MB */
+	};
+
+	framebuffer@3c200000 {
+		compatible = "simple-framebuffer";
+		// reg = <0x3c200000 (480 * 800 * 4)>;
+		reg = <0x3c200000 0x1000>;
+		width = <480>;
+		height = <800>;
+		stride = <(480 * 4)>;
+		format = "a8r8g8b8";
+		status = "okay";
+	};
+};
+
+/* SD card */
+&sdio0 {
+	max-frequency = <48000000>;
+	cd-gpios = <&gpio 91 GPIO_ACTIVE_LOW>;
+	status = "okay";
+};
+
+/* Internal storage */
+&sdio1 {
+	non-removable;
+	max-frequency = <52000000>;
+	bus-width = <8>;
+	status = "okay";
+};
+
+
+&uartb {
+	status = "okay";
+};
+
+&usbotg {
+	status = "okay";
+};
+
+&usbphy {
+	status = "okay";
+};
