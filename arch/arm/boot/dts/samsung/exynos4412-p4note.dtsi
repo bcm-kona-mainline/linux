@@ -122,6 +122,25 @@
 		regulator-boot-on;
 	};
 
+	mic_bias_reg: voltage-regulator-5 {
+		compatible = "regulator-fixed";
+		regulator-name = "MICBIAS_LDO_2.8V";
+		pinctrl-names = "default";
+		pinctrl-0 = <&main_mic_bias>;
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		gpios = <&gpm0 0 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vbatt: voltage-regulator-6 {
+		compatible = "regulator-fixed";
+		regulator-name = "VBATT";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-always-on;
+	};
+
 	wlan_pwrseq: sdhci3-pwrseq {
 		compatible = "mmc-pwrseq-simple";
 		reset-gpios = <&gpm3 5 GPIO_ACTIVE_LOW>;
@@ -255,6 +274,51 @@
 		num-interpolated-steps = <8>;
 		default-brightness-level = <12>;
 	};
+
+	sound: sound {
+		compatible = "samsung,midas-audio";
+		model = "p4note";
+		mic-bias-supply = <&mic_bias_reg>;
+		lineout-sel-gpios = <&gpj1 2 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&lineout_en>;
+
+		samsung,audio-routing =
+			"HP", "HPOUT1L",
+			"HP", "HPOUT1R",
+
+			"SPK", "SPKOUTLN",
+			"SPK", "SPKOUTLP",
+			"SPK", "SPKOUTRN",
+			"SPK", "SPKOUTRP",
+
+			"RCV", "HPOUT2N",
+			"RCV", "HPOUT2P",
+
+			"HDMI", "LINEOUT1N",
+			"HDMI", "LINEOUT1P",
+
+			"LINE", "LINEOUT2N",
+			"LINE", "LINEOUT2P",
+
+			"IN1LP", "MICBIAS1",
+			"IN1LN", "MICBIAS1",
+			"Main Mic", "MICBIAS1",
+
+			"IN1RP", "Sub Mic",
+			"IN1RN", "Sub Mic",
+
+			"IN2LP:VXRN", "MICBIAS2",
+			"Headset Mic", "MICBIAS2";
+
+		cpu {
+			sound-dai = <&i2s0 0>;
+		};
+		codec {
+			sound-dai = <&wm1811>;
+		};
+	};
+
 };
 
 &adc {
@@ -411,6 +475,45 @@
 		interrupt-parent = <&gpm2>;
 		interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpios = <&gpm0 4 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&i2c_4 {
+	samsung,i2c-sda-delay = <100>;
+	samsung,i2c-slave-addr = <0x10>;
+	samsung,i2c-max-bus-freq = <400000>;
+	pinctrl-0 = <&i2c4_bus>;
+	pinctrl-names = "default";
+	status = "okay";
+
+	wm1811: audio-codec@1a {
+		compatible = "wlf,wm1811";
+		reg = <0x1a>;
+		clocks = <&pmu_system_controller 0>,
+			<&max77686 MAX77686_CLK_PMIC>;
+		clock-names = "MCLK1", "MCLK2";
+
+		pinctrl-0 = <&wm1811_ldo>;
+		pinctrl-names = "default";
+		gpio-controller;
+		#gpio-cells = <2>;
+		#sound-dai-cells = <0>;
+
+		AVDD2-supply = <&vbatt>;
+		DCVDD-supply = <&ldo3_reg>;
+		CPVDD-supply = <&vbatt>;
+		DBVDD1-supply = <&ldo3_reg>;
+		DBVDD2-supply = <&vbatt>;
+		DBVDD3-supply = <&vbatt>;
+		SPKVDD1-supply = <&vbatt>;
+		SPKVDD2-supply = <&vbatt>;
+
+		wlf,micbias-cfg = <0x2F 0x27>;
+		wlf,gpio-cfg = <0x3 0x0 0x0 0x0 0x0 0x0 0x0 0x8000 0x0 0x0 0x0>;
+		wlf,lineout1-feedback;
+		wlf,ldo1ena-gpios = <&gpm4 4 GPIO_ACTIVE_HIGH>;
+		wlf,ldo2ena-gpios = <&gpm4 4 GPIO_ACTIVE_HIGH>;
+		wlf,ldoena-always-driven;
 	};
 };
 
@@ -724,6 +827,12 @@
 	};
 };
 
+&i2s0 {
+	pinctrl-0 = <&i2s0_bus>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
 &mshc_0 {
 	broken-cd;
 	non-removable;
@@ -759,6 +868,12 @@
 
 	lcd_enable: lcd-enable-pins {
 		samsung,pins = "gpc0-1";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+	};
+
+	lineout_en: lineout-en-pins {
+		samsung,pins = "gpj1-2";
 		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
 		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
 	};
@@ -891,6 +1006,12 @@
 		/* 0 = CP, 1 = AP (serial output) */
 	};
 
+	main_mic_bias: main-mic-bias-pins {
+		samsung,pins = "gpm0-0";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+	};
+
 	led_bl_reset: led-bl-reset-pins {
 		samsung,pins = "gpm0-1";
 		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
@@ -917,6 +1038,12 @@
 
 	wifi_reset: wifi-reset-pins {
 		samsung,pins = "gpm3-5";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+	};
+
+	wm1811_ldo: wm1811-ldo-pins {
+		samsung,pins = "gpm4-4";
 		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
 		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
 	};
