@@ -145,6 +145,8 @@ enum max77693_pmic_reg {
 #define DEFAULT_THERMAL_REGULATION_TEMP		100
 /* microamps */
 #define DEFAULT_BATTERY_OVERCURRENT		3500000
+/* microamps */
+#define DEFAULT_FAST_CHARGE_CURRENT		500000
 /* microvolts */
 #define DEFAULT_CHARGER_INPUT_THRESHOLD_VOLT	4300000
 

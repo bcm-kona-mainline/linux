@@ -26,6 +26,7 @@ struct max77693_charger {
 	u32 min_system_volt;
 	u32 thermal_regulation_temp;
 	u32 batttery_overcurrent;
+	u32 fast_charge_current;
 	u32 charge_input_threshold_volt;
 };
 
@@ -596,6 +597,48 @@ static int max77693_set_batttery_overcurrent(struct max77693_charger *chg,
 			CHG_CNFG_12_B2SOVRC_MASK, data);
 }
 
+static int max77693_set_input_current_limit(struct max77693_charger *chg,
+		unsigned int uamp)
+{
+	unsigned int data;
+
+	if (uamp < 60000 || uamp > 2540000) {
+		dev_err(chg->dev, "Wrong value for input current limit");
+		return -EINVAL;
+	};
+
+	data = uamp / 20000; /* 20mA steps */
+
+	data <<= CHG_CNFG_09_CHGIN_ILIM_SHIFT;
+
+	dev_dbg(chg->dev, "Input current limit: %u (0x%x)\n", uamp, data);
+
+	return regmap_update_bits(chg->max77693->regmap,
+			MAX77693_CHG_REG_CHG_CNFG_09,
+			CHG_CNFG_09_CHGIN_ILIM_MASK, data);
+}
+
+static int max77693_set_fast_charge_current(struct max77693_charger *chg,
+		unsigned int uamp)
+{
+	unsigned int data;
+
+	if (uamp > 2100000) {
+		dev_err(chg->dev, "Wrong value for fast charge current\n");
+		return -EINVAL;
+	}
+
+	data = uamp / 33300; /* 0.1A/3 steps */
+
+	data <<= CHG_CNFG_02_CC_SHIFT;
+
+	dev_dbg(chg->dev, "Fast charge current: %u (0x%x)\n", uamp, data);
+
+	return regmap_update_bits(chg->max77693->regmap,
+			MAX77693_CHG_REG_CHG_CNFG_02,
+			CHG_CNFG_02_CC_MASK, data);
+}
+
 static int max77693_set_charge_input_threshold_volt(struct max77693_charger *chg,
 		unsigned int uvolt)
 {
@@ -673,6 +716,15 @@ static int max77693_reg_init(struct max77693_charger *chg)
 	if (ret)
 		return ret;
 
+	ret = max77693_set_fast_charge_current(chg, chg->fast_charge_current);
+	if (ret)
+		return ret;
+
+	ret = max77693_set_input_current_limit(chg,
+				DEFAULT_FAST_CHARGE_CURRENT);
+	if (ret)
+		return ret;
+
 	return max77693_set_charge_input_threshold_volt(chg,
 			chg->charge_input_threshold_volt);
 }
@@ -681,6 +733,7 @@ static int max77693_reg_init(struct max77693_charger *chg)
 static int max77693_dt_init(struct device *dev, struct max77693_charger *chg)
 {
 	struct device_node *np = dev->of_node;
+	struct power_supply_battery_info *battery_info;
 
 	if (!np) {
 		dev_err(dev, "no charger OF node\n");
@@ -708,11 +761,20 @@ static int max77693_dt_init(struct device *dev, struct max77693_charger *chg)
 		chg->charge_input_threshold_volt =
 			DEFAULT_CHARGER_INPUT_THRESHOLD_VOLT;
 
+	if (power_supply_get_battery_info(chg->charger, &battery_info) ||
+			!battery_info->constant_charge_current_max_ua)
+		chg->fast_charge_current = DEFAULT_FAST_CHARGE_CURRENT;
+	else
+		chg->fast_charge_current =
+			battery_info->constant_charge_current_max_ua;
+
 	return 0;
 }
 #else /* CONFIG_OF */
 static int max77693_dt_init(struct device *dev, struct max77693_charger *chg)
 {
+	chg->fast_charge_current = DEFAULT_FAST_CHARGE_CURRENT;
+
 	return 0;
 }
 #endif /* CONFIG_OF */
@@ -732,6 +794,15 @@ static int max77693_charger_probe(struct platform_device *pdev)
 	chg->dev = &pdev->dev;
 	chg->max77693 = max77693;
 
+	psy_cfg.drv_data = chg;
+
+	chg->charger = devm_power_supply_register(&pdev->dev,
+						  &max77693_charger_desc,
+						  &psy_cfg);
+	if (IS_ERR(chg->charger))
+		return dev_err_probe(&pdev->dev, PTR_ERR(chg->charger),
+				     "failed: power supply register\n");
+
 	ret = max77693_dt_init(&pdev->dev, chg);
 	if (ret)
 		return ret;
@@ -739,8 +810,6 @@ static int max77693_charger_probe(struct platform_device *pdev)
 	ret = max77693_reg_init(chg);
 	if (ret)
 		return ret;
-
-	psy_cfg.drv_data = chg;
 
 	ret = device_create_file(&pdev->dev, &dev_attr_fast_charge_timer);
 	if (ret) {
@@ -758,15 +827,6 @@ static int max77693_charger_probe(struct platform_device *pdev)
 	ret = device_create_file(&pdev->dev, &dev_attr_top_off_timer);
 	if (ret) {
 		dev_err(&pdev->dev, "failed: create top off timer sysfs entry\n");
-		goto err;
-	}
-
-	chg->charger = devm_power_supply_register(&pdev->dev,
-						  &max77693_charger_desc,
-						  &psy_cfg);
-	if (IS_ERR(chg->charger)) {
-		dev_err(&pdev->dev, "failed: power supply register\n");
-		ret = PTR_ERR(chg->charger);
 		goto err;
 	}
 
