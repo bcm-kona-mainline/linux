@@ -937,8 +937,9 @@ static void max77693_muic_irq_work(struct work_struct *work)
 {
 	struct max77693_muic_info *info = container_of(work,
 			struct max77693_muic_info, irq_work);
+	unsigned int cable_type;
 	int ret = 0;
-	int adc;
+	int adc, i;
 
 	if (!info->edev)
 		return;
@@ -949,8 +950,28 @@ static void max77693_muic_irq_work(struct work_struct *work)
 			MAX77693_MUIC_REG_STATUS1, info->status, 2);
 	if (ret) {
 		dev_err(info->dev, "failed to read MUIC register\n");
-		mutex_unlock(&info->mutex);
-		return;
+		goto out;
+	}
+
+	/*
+	 * Clear currently reported status (starting from the end,
+	 * so that EXTCON_USB is cleared last)
+	 */
+	for (i = ARRAY_SIZE(max77693_extcon_cable); i >= 0; i--) {
+		cable_type = max77693_extcon_cable[i];
+		if (cable_type == EXTCON_NONE)
+			continue;
+
+		if (extcon_get_state(info->edev, cable_type)) {
+			ret = extcon_set_state_sync(info->edev, cable_type,
+						    false);
+			if (ret) {
+				dev_err(info->dev,
+					"failed to clear extcon cable type %d status: %d\n",
+					cable_type, ret);
+				goto out;
+			}
+		}
 	}
 
 	adc = info->status[0] & MAX77693_STATUS1_ADC_MASK;
@@ -964,6 +985,7 @@ static void max77693_muic_irq_work(struct work_struct *work)
 	if (ret < 0)
 		dev_err(info->dev, "failed to handle MUIC interrupt\n");
 
+out:
 	mutex_unlock(&info->mutex);
 }
 
