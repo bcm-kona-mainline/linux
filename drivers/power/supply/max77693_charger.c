@@ -692,11 +692,30 @@ static int max77693_set_charging(struct max77693_charger *chg, bool enable)
 			data);
 }
 
+static int max77693_set_otg(struct max77693_charger *chg, bool enable)
+{
+	unsigned int data;
+
+	if (enable)
+		data = CHG_CNFG_00_OTG_MASK | CHG_CNFG_00_BOOST_MASK |
+				CHG_CNFG_00_DIS_MUIC_CTRL_MASK;
+	else
+		data = ~(CHG_CNFG_00_OTG_MASK | CHG_CNFG_00_BOOST_MASK |
+				CHG_CNFG_00_DIS_MUIC_CTRL_MASK);
+
+	return regmap_update_bits(chg->max77693->regmap,
+			MAX77693_CHG_REG_CHG_CNFG_00,
+			CHG_CNFG_00_OTG_MASK | CHG_CNFG_00_BOOST_MASK |
+			CHG_CNFG_00_DIS_MUIC_CTRL_MASK,
+			data);
+}
+
 static void max77693_charger_extcon_work(struct work_struct *work)
 {
 	struct max77693_charger *chg = container_of(work, struct max77693_charger,
 						  cable.work);
 	struct extcon_dev *edev = chg->cable.edev;
+	bool set_charging, set_otg;
 	int connector, state;
 	int ret;
 
@@ -715,25 +734,39 @@ static void max77693_charger_extcon_work(struct work_struct *work)
 	case EXTCON_CHG_USB_FAST:
 	case EXTCON_CHG_USB_SLOW:
 	case EXTCON_CHG_USB_PD:
-		ret = max77693_set_charging(chg, true);
-		if (ret) {
-			dev_err(chg->dev, "failed to enable charging\n");
-			break;
-		}
+		set_charging = true;
+		set_otg = false;
+
 		dev_info(chg->dev, "charging. connector type: %d\n",
 			 connector);
 		break;
+	case EXTCON_USB_HOST:
+		set_charging = false;
+		set_otg = true;
+
+		dev_info(chg->dev, "USB host. connector type: %d\n",
+			 connector);
+		break;
 	default:
-		ret = max77693_set_charging(chg, false);
-		if (ret) {
-			dev_err(chg->dev, "failed to disable charging\n");
-			break;
-		}
+		set_charging = false;
+		set_otg = false;
+
 		dev_info(chg->dev, "not charging. connector type: %d\n",
 			 connector);
 		break;
 	}
 
+	ret = max77693_set_charging(chg, set_charging);
+	if (ret) {
+		dev_err(chg->dev, "failed to set charging (%d)\n", ret);
+		goto out;
+	}
+
+	ret = max77693_set_otg(chg, set_otg);
+	if (ret)
+		dev_err(chg->dev, "failed to set OTG (%d)\n", ret);
+
+out:
 	power_supply_changed(chg->charger);
 }
 
