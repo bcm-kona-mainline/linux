@@ -716,6 +716,7 @@ static void max77693_charger_extcon_work(struct work_struct *work)
 						  cable.work);
 	struct extcon_dev *edev = chg->cable.edev;
 	bool set_charging, set_otg;
+	unsigned int input_current;
 	int connector, state;
 	int ret;
 
@@ -728,19 +729,28 @@ static void max77693_charger_extcon_work(struct work_struct *work)
 
 	switch (connector) {
 	case EXTCON_CHG_USB_SDP:
-	case EXTCON_CHG_USB_DCP:
 	case EXTCON_CHG_USB_CDP:
-	case EXTCON_CHG_USB_ACA:
-	case EXTCON_CHG_USB_FAST:
 	case EXTCON_CHG_USB_SLOW:
-	case EXTCON_CHG_USB_PD:
+		input_current = 500000; /* 500 mA */
 		set_charging = true;
 		set_otg = false;
 
-		dev_info(chg->dev, "charging. connector type: %d\n",
+		dev_info(chg->dev, "slow charging. connector type: %d\n",
+			 connector);
+		break;
+	case EXTCON_CHG_USB_DCP:
+	case EXTCON_CHG_USB_ACA:
+	case EXTCON_CHG_USB_FAST:
+	case EXTCON_CHG_USB_PD:
+		input_current = chg->fast_charge_current;
+		set_charging = true;
+		set_otg = false;
+
+		dev_info(chg->dev, "fast charging. connector type: %d\n",
 			 connector);
 		break;
 	case EXTCON_USB_HOST:
+		input_current = 500000; /* 500 mA */
 		set_charging = false;
 		set_otg = true;
 
@@ -748,12 +758,19 @@ static void max77693_charger_extcon_work(struct work_struct *work)
 			 connector);
 		break;
 	default:
+		input_current = 500000; /* 500 mA */
 		set_charging = false;
 		set_otg = false;
 
 		dev_info(chg->dev, "not charging. connector type: %d\n",
 			 connector);
 		break;
+	}
+
+	ret = max77693_set_input_current_limit(chg, input_current);
+	if (ret) {
+		dev_err(chg->dev, "failed to set input current (%d)\n", ret);
+		goto out;
 	}
 
 	ret = max77693_set_charging(chg, set_charging);
