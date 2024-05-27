@@ -157,6 +157,17 @@
 				};
 			};
 
+			muic {
+				compatible = "maxim,max77693-muic";
+
+				usb_conn: connector {
+					compatible = "samsung,usb-connector-11pin",
+						     "usb-b-connector";
+					label = "micro-USB";
+					type = "micro";
+				};
+			};
+
 			charger {
 				compatible = "maxim,max77693-charger";
 				monitored-battery = <&battery>;
@@ -166,6 +177,8 @@
 				maxim,thermal-regulation-celsius = <100>;
 				maxim,battery-overcurrent-microamp = <3500000>;
 				maxim,charge-input-threshold-microvolt = <4300000>;
+
+				maxim,usb-connector = <&usb_conn>;
 			};
 		};
 	};
