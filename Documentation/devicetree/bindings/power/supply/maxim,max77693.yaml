@@ -73,6 +73,12 @@ properties:
     enum: [4300000, 4700000, 4800000, 4900000]
     default: 4300000
 
+  maxim,usb-connector:
+    $ref: /schemas/types.yaml#/definitions/phandle
+    description:
+      USB connector to use for charger type/OTG cable detection. Phandle
+      to a USB connector according to usb-connector.yaml.
+
 required:
   - compatible
 
