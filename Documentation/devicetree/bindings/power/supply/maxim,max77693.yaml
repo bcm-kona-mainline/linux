@@ -16,9 +16,18 @@ description: |
   See also Documentation/devicetree/bindings/mfd/maxim,max77693.yaml for
   additional information and example.
 
+allOf:
+  - $ref: power-supply.yaml#
+
 properties:
   compatible:
     const: maxim,max77693-charger
+
+  monitored-battery:
+    description:
+      Phandle to "simple-battery"-compatible battery node.
+      The constant-charge-current-max-microamps property of the battery
+      node is used to specify the fast charge current.
 
   maxim,constant-microvolt:
     description: |
