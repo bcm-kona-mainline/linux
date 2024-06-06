@@ -20,10 +20,18 @@
 
 #define BCM590XX_MAX_NUM_REGS	27
 
-#define BCM590XX_REG_ENABLE	BIT(7)
 #define BCM590XX_VBUS_ENABLE	BIT(2)
 #define BCM590XX_LDO_VSEL_MASK	GENMASK(5, 3)
 #define BCM590XX_SR_VSEL_MASK	GENMASK(5, 0)
+
+#define BCM590XX_PMMODE_ON		0x0
+#define BCM590XX_PMMODE_LPM		0x1
+#define BCM590XX_PMMODE_OFF		0x2
+
+#define PMMODE_3BIT_MASK(mode) (((mode & 0x7) << 3) | (mode & 0x7))
+#define PMMODE_2BIT_MASK(mode)					\
+	(((mode & 0x3) << 6) | ((mode & 0x3) << 4)		\
+		| ((mode & 0x3) << 2) | (mode & 0x3))
 
 enum bcm590xx_reg_type {
 	BCM590XX_REG_TYPE_LDO,
@@ -37,9 +45,15 @@ enum bcm590xx_reg_regmap {
 	BCM590XX_REG_REGMAP_SEC,
 };
 
+enum bcm590xx_reg_pmmode {
+	BCM590XX_REG_PMMODE_2BIT = 2,
+	BCM590XX_REG_PMMODE_3BIT = 3,
+};
+
 struct bcm590xx_reg_info {
 	enum bcm590xx_reg_type type;
 	enum bcm590xx_reg_regmap regmap;
+	enum bcm590xx_reg_pmmode pmmode_bits;
 	const struct regulator_desc desc;
 };
 
@@ -49,10 +63,127 @@ struct bcm590xx_reg {
 	struct bcm590xx_reg_info regs[BCM590XX_MAX_NUM_REGS];
 };
 
+static int bcm590xx_get_pmmode(struct bcm590xx_reg *pmu, int reg_id)
+{
+	struct bcm590xx_reg_info *reg = &pmu->regs[reg_id];
+	struct regmap *regmap;
+	unsigned int val;
+	int ret;
+	u8 mask, shift;
+
+	if (reg->regmap == BCM590XX_REG_REGMAP_PRI)
+		regmap = pmu->mfd->regmap_pri;
+	else if (reg->regmap == BCM590XX_REG_REGMAP_SEC)
+		regmap = pmu->mfd->regmap_sec;
+	else
+		return -EINVAL;
+
+	/*
+	 * The BCM590XX has multiple PMMODE registers, each holding multiple
+	 * values; which value is selected depends on the state of PCx pins.
+	 *
+	 * Since we write the same value to all PMMODE registers, we can read
+	 * the first one and assume it's the selected value.
+	 */
+	if (reg->pmmode_bits == BCM590XX_REG_PMMODE_3BIT) {
+		mask = 0x7;
+		shift = 3;
+	} else if (reg->pmmode_bits == BCM590XX_REG_PMMODE_2BIT) {
+		mask = 0x3;
+		shift = 6;
+	} else {
+		return -EINVAL;
+	}
+
+	ret = regmap_read(regmap, reg->desc.enable_reg, &val);
+	if (ret) {
+		dev_err(pmu->mfd->dev, "Failed to get pmmode register: %d",
+			ret);
+		return ret;
+	}
+
+	val >>= shift;
+	val &= mask;
+
+	return val;
+};
+
+static int bcm590xx_set_pmmode(struct bcm590xx_reg *pmu, int reg_id,
+			       unsigned int mode)
+{
+	struct bcm590xx_reg_info *reg = &pmu->regs[reg_id];
+	struct regmap *regmap;
+	unsigned int pmctrl_count, i;
+	u8 mode_mask;
+	u8 val[4];
+	int ret;
+
+	/*
+	 * Regulators using 2-bit mode controls have 2 PMCTRL registers;
+	 * regulators using 3-bit mode controls have 4 PMCTRL registers.
+	 */
+	if (reg->pmmode_bits == BCM590XX_REG_PMMODE_3BIT) {
+		pmctrl_count = 4;
+		mode_mask = PMMODE_3BIT_MASK(mode);
+	} else if (reg->pmmode_bits == BCM590XX_REG_PMMODE_2BIT) {
+		pmctrl_count = 2;
+		mode_mask = PMMODE_2BIT_MASK(mode);
+	} else {
+		return -EINVAL;
+	}
+
+	if (reg->regmap == BCM590XX_REG_REGMAP_PRI)
+		regmap = pmu->mfd->regmap_pri;
+	else if (reg->regmap == BCM590XX_REG_REGMAP_SEC)
+		regmap = pmu->mfd->regmap_sec;
+	else
+		return -EINVAL;
+
+	for (i = 0; i < pmctrl_count; i++) {
+		val[i] = mode_mask;
+	}
+
+	ret = regmap_bulk_write(regmap, reg->desc.enable_reg, &val,
+				pmctrl_count);
+	if (ret)
+		dev_err(pmu->mfd->dev, "Failed to set pmmode registers: %d",
+			ret);
+
+	return ret;
+}
+
+static int bcm590xx_regulator_enable(struct regulator_dev *rdev)
+{
+	struct bcm590xx_reg *pmu = rdev->reg_data;
+
+	return bcm590xx_set_pmmode(pmu, rdev->desc->id, BCM590XX_PMMODE_ON);
+}
+
+static int bcm590xx_regulator_disable(struct regulator_dev *rdev)
+{
+	struct bcm590xx_reg *pmu = rdev->reg_data;
+
+	return bcm590xx_set_pmmode(pmu, rdev->desc->id, BCM590XX_PMMODE_OFF);
+}
+
+static int bcm590xx_regulator_is_enabled(struct regulator_dev *rdev)
+{
+	struct bcm590xx_reg *pmu = rdev->reg_data;
+	int pmmode = bcm590xx_get_pmmode(pmu, rdev->desc->id);
+
+	if (pmmode < 0)
+		return pmmode;
+
+	if (pmmode == BCM590XX_PMMODE_OFF)
+		return 0;
+
+	return 1;
+}
+
 static const struct regulator_ops bcm590xx_ops_ldo = {
-	.is_enabled		= regulator_is_enabled_regmap,
-	.enable			= regulator_enable_regmap,
-	.disable		= regulator_disable_regmap,
+	.is_enabled		= bcm590xx_regulator_is_enabled,
+	.enable			= bcm590xx_regulator_enable,
+	.disable		= bcm590xx_regulator_disable,
 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
 	.list_voltage		= regulator_list_voltage_table,
@@ -60,9 +191,9 @@ static const struct regulator_ops bcm590xx_ops_ldo = {
 };
 
 static const struct regulator_ops bcm590xx_ops_dcdc = {
-	.is_enabled		= regulator_is_enabled_regmap,
-	.enable			= regulator_enable_regmap,
-	.disable		= regulator_disable_regmap,
+	.is_enabled		= bcm590xx_regulator_is_enabled,
+	.enable			= bcm590xx_regulator_enable,
+	.disable		= bcm590xx_regulator_disable,
 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
 	.list_voltage		= regulator_list_voltage_linear_range,
@@ -90,9 +221,7 @@ static const struct regulator_ops bcm590xx_ops_vbus = {
 	.volt_table = _model_lower##_##_table,				\
 	.vsel_reg = _model##_##_name##CTRL,				\
 	.vsel_mask = BCM590XX_LDO_VSEL_MASK,				\
-	.enable_reg = _model##_##_name##PMCTRL1,			\
-	.enable_mask = BCM590XX_REG_ENABLE,				\
-	.enable_is_inverted = true
+	.enable_reg = _model##_##_name##PMCTRL1
 
 #define BCM590XX_SR_DESC(_model, _model_lower, _name, _name_lower, _ranges) \
 	BCM590XX_REG_DESC(_model, _name, _name_lower),			\
@@ -102,9 +231,7 @@ static const struct regulator_ops bcm590xx_ops_vbus = {
 	.n_linear_ranges = ARRAY_SIZE(_model_lower##_##_ranges),	\
 	.vsel_reg = _model##_##_name##VOUT1,				\
 	.vsel_mask = BCM590XX_SR_VSEL_MASK,				\
-	.enable_reg = _model##_##_name##PMCTRL1,			\
-	.enable_mask = BCM590XX_REG_ENABLE,				\
-	.enable_is_inverted = true
+	.enable_reg = _model##_##_name##PMCTRL1
 
 #define BCM59056_REG_DESC(_name, _name_lower)				\
 	BCM590XX_REG_DESC(BCM59056, _name, _name_lower)
@@ -265,6 +392,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(RFLDO, rfldo, ldo_a_table),
 		},
@@ -273,6 +401,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(CAMLDO1, camldo1, ldo_c_table),
 		},
@@ -281,6 +410,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(CAMLDO2, camldo2, ldo_c_table),
 		},
@@ -289,6 +419,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(SIMLDO1, simldo1, ldo_a_table),
 		},
@@ -297,6 +428,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(SIMLDO2, simldo2, ldo_a_table),
 		},
@@ -305,6 +437,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(SDLDO, sdldo, ldo_c_table),
 		},
@@ -313,6 +446,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(SDXLDO, sdxldo, ldo_a_table),
 		},
@@ -321,6 +455,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(MMCLDO1, mmcldo1, ldo_a_table),
 		},
@@ -329,6 +464,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(MMCLDO2, mmcldo2, ldo_a_table),
 		},
@@ -337,6 +473,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(AUDLDO, audldo, ldo_a_table),
 		},
@@ -345,6 +482,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(MICLDO, micldo, ldo_a_table),
 		},
@@ -353,6 +491,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(USBLDO, usbldo, ldo_a_table),
 		},
@@ -361,6 +500,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(VIBLDO, vibldo, ldo_c_table),
 		},
@@ -369,6 +509,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_3BIT,
 		.desc = {
 			BCM59056_SR_DESC(CSR, csr, dcdc_csr_ranges),
 		},
@@ -377,6 +518,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_SR_DESC(IOSR1, iosr1, dcdc_iosr1_ranges),
 		},
@@ -385,6 +527,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_SR_DESC(IOSR2, iosr2, dcdc_iosr1_ranges),
 		},
@@ -393,6 +536,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_3BIT,
 		.desc = {
 			BCM59056_SR_DESC(MSR, msr, dcdc_iosr1_ranges),
 		},
@@ -401,6 +545,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_SR_DESC(SDSR1, sdsr1, dcdc_sdsr1_ranges),
 		},
@@ -409,6 +554,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_SR_DESC(SDSR2, sdsr2, dcdc_iosr1_ranges),
 		},
@@ -417,6 +563,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_3BIT,
 		.desc = {
 			BCM59056_SR_DESC(VSR, vsr, dcdc_iosr1_ranges),
 		},
@@ -425,6 +572,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(GPLDO1, gpldo1, ldo_a_table),
 		},
@@ -433,6 +581,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(GPLDO2, gpldo2, ldo_a_table),
 		},
@@ -441,6 +590,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(GPLDO3, gpldo3, ldo_a_table),
 		},
@@ -449,6 +599,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(GPLDO4, gpldo4, ldo_a_table),
 		},
@@ -457,6 +608,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(GPLDO5, gpldo5, ldo_a_table),
 		},
@@ -465,6 +617,7 @@ static const struct bcm590xx_reg_info bcm59056_regs[BCM59056_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59056_LDO_DESC(GPLDO6, gpldo6, ldo_a_table),
 		},
@@ -635,6 +788,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(RFLDO, rfldo, ldo_1_table),
 		},
@@ -643,6 +797,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(CAMLDO1, camldo1, ldo_2_table),
 		},
@@ -651,6 +806,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(CAMLDO2, camldo2, ldo_2_table),
 		},
@@ -659,6 +815,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(SIMLDO1, simldo1, ldo_1_table),
 		},
@@ -667,6 +824,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(SIMLDO2, simldo2, ldo_1_table),
 		},
@@ -675,6 +833,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(SDLDO, sdldo, ldo_2_table),
 		},
@@ -683,6 +842,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(SDXLDO, sdxldo, ldo_1_table),
 		},
@@ -691,6 +851,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(MMCLDO1, mmcldo1, ldo_1_table),
 		},
@@ -699,6 +860,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(MMCLDO2, mmcldo2, ldo_1_table),
 		},
@@ -707,6 +869,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(AUDLDO, audldo, ldo_1_table),
 		},
@@ -715,6 +878,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(MICLDO, micldo, ldo_1_table),
 		},
@@ -723,6 +887,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(USBLDO, usbldo, ldo_1_table),
 		},
@@ -731,6 +896,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_LDO,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(VIBLDO, vibldo, ldo_2_table),
 		},
@@ -739,6 +905,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_3BIT,
 		.desc = {
 			BCM59054_SR_DESC(CSR, csr, dcdc_csr_ranges),
 		},
@@ -747,6 +914,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_SR_DESC(IOSR1, iosr1, dcdc_sr_ranges),
 		},
@@ -755,6 +923,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_SR_DESC(IOSR2, iosr2, dcdc_sr_ranges),
 		},
@@ -763,6 +932,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_3BIT,
 		.desc = {
 			BCM59054_SR_DESC(MMSR, mmsr, dcdc_sr_ranges),
 		},
@@ -771,6 +941,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_SR_DESC(SDSR1, sdsr1, dcdc_sr_ranges),
 		},
@@ -779,6 +950,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_SR_DESC(SDSR2, sdsr2, dcdc_sr_ranges),
 		},
@@ -787,6 +959,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_SR,
 		.regmap = BCM590XX_REG_REGMAP_PRI,
+		.pmmode_bits = BCM590XX_REG_PMMODE_3BIT,
 		.desc = {
 			BCM59054_SR_DESC(VSR, vsr, dcdc_vsr_ranges),
 		},
@@ -795,6 +968,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(GPLDO1, gpldo1, ldo_1_table),
 		},
@@ -803,6 +977,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(GPLDO2, gpldo2, ldo_1_table),
 		},
@@ -811,6 +986,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(GPLDO3, gpldo3, ldo_1_table),
 		},
@@ -819,6 +995,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(TCXLDO, tcxldo, ldo_1_table),
 		},
@@ -827,6 +1004,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(LVLDO1, lvldo1, ldo_1_table),
 		},
@@ -835,6 +1013,7 @@ static const struct bcm590xx_reg_info bcm59054_regs[BCM59054_NUM_REGS] = {
 	{
 		.type = BCM590XX_REG_TYPE_GPLDO,
 		.regmap = BCM590XX_REG_REGMAP_SEC,
+		.pmmode_bits = BCM590XX_REG_PMMODE_2BIT,
 		.desc = {
 			BCM59054_LDO_DESC(LVLDO2, lvldo2, ldo_3_table),
 		},
