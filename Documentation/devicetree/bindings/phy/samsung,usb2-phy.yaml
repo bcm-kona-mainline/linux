@@ -21,8 +21,8 @@ description: |
     3 - HSIC1 ("hsic1"),
   Exynos3250 has only USB device phy available as phy 0.
 
-  Exynos4210 and Exynos4212 use mode switching and require that mode switch
-  register is supplied.
+  Exynos4212, Exynos5250 and Exynos5420 use mode switching and require that
+  mode switch register is supplied.
 
 properties:
   compatible:
