@@ -60,6 +60,12 @@ properties:
     description:
       Phandle to system registers interface.
 
+  samsung,usb-connector:
+    description:
+      Phandle to a port of an extcon device representing a USB connector
+      to use for OTG mode switch. If this property is not set, the mode
+      will be selected based on the powered-on PHY.
+
   vbus-supply:
     description:
       VBUS power source.
@@ -84,6 +90,18 @@ allOf:
     then:
       required:
         - samsung,sysreg-phandle
+  - if:
+      properties:
+        compatible:
+          not:
+            contains:
+              enum:
+                - samsung,exynos4x12-usb2-phy
+                - samsung,exynos5250-usb2-phy
+                - samsung,exynos5420-usb2-phy
+    then:
+      properties:
+        samsung,usb-connector: false
 
 additionalProperties: false
 
