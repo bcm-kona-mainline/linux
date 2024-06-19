@@ -84,12 +84,6 @@
 #define EXYNOS_4210_UPHY1CON			0x34
 #define EXYNOS_4210_UPHY1CON_FLOAT_PREVENTION	0x1
 
-/* Mode switching SUB Device <-> Host */
-#define EXYNOS_4210_MODE_SWITCH_OFFSET		0x21c
-#define EXYNOS_4210_MODE_SWITCH_MASK		1
-#define EXYNOS_4210_MODE_SWITCH_DEVICE		0
-#define EXYNOS_4210_MODE_SWITCH_HOST		1
-
 enum exynos4210_phy_id {
 	EXYNOS4210_DEVICE,
 	EXYNOS4210_HOST,
@@ -250,7 +244,6 @@ static const struct samsung_usb2_common_phy exynos4210_phys[] = {
 };
 
 const struct samsung_usb2_phy_config exynos4210_usb2_phy_config = {
-	.has_mode_switch	= 0,
 	.num_phys		= EXYNOS4210_NUM_PHYS,
 	.phys			= exynos4210_phys,
 	.rate_to_clk		= exynos4210_rate_to_clk,
