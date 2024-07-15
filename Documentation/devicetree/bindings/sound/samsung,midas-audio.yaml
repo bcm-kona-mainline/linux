@@ -11,7 +11,11 @@ maintainers:
 
 properties:
   compatible:
-    const: samsung,midas-audio
+    oneOf:
+      - const: samsung,midas-audio
+      - items:
+          - const: samsung,tab3-audio
+          - const: samsung,midas-audio
 
   cpu:
     type: object
@@ -96,8 +100,6 @@ required:
   - cpu
   - codec
   - audio-routing
-  - mic-bias-supply
-  - submic-bias-supply
 
 allOf:
   - $ref: sound-card-common.yaml#
@@ -124,6 +126,28 @@ allOf:
     then:
       required:
         - samsung,headset-button-threshold-microvolt
+
+  - if:
+      properties:
+        compatible:
+          const: samsung,midas-audio
+
+    then:
+      required:
+        - mic-bias-supply
+        - submic-bias-supply
+
+  - if:
+      properties:
+        compatible:
+          contains:
+            const: samsung,tab3-audio
+
+    then:
+      required:
+        - headset-mic-bias-supply
+        - headset-detect-gpios
+        - headset-key-gpios
 
 unevaluatedProperties: false
 
