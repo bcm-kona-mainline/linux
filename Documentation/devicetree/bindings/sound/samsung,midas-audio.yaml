@@ -9,9 +9,6 @@ title: Samsung Midas audio complex with WM1811 codec
 maintainers:
   - Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-allOf:
-  - $ref: sound-card-common.yaml#
-
 properties:
   compatible:
     const: samsung,midas-audio
@@ -101,6 +98,32 @@ required:
   - audio-routing
   - mic-bias-supply
   - submic-bias-supply
+
+allOf:
+  - $ref: sound-card-common.yaml#
+
+  - if:
+      anyOf:
+        - required: [ headset-detect-gpios ]
+        - required: [ headset-key-gpios ]
+    then:
+      required:
+        - io-channels
+        - io-channel-names
+
+  - if:
+      required:
+        - headset-detect-gpios
+    then:
+      required:
+        - samsung,headset-4pole-threshold-microvolt
+
+  - if:
+      required:
+        - headset-key-gpios
+    then:
+      required:
+        - samsung,headset-button-threshold-microvolt
 
 unevaluatedProperties: false
 
