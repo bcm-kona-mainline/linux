@@ -192,6 +192,7 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&max77693_fuel_irq>;
 
+			maxim,rsns-microohm = <10000>;
 			maxim,over-heat-temp = <500>;
 			maxim,over-volt = <4500>;
 		};
