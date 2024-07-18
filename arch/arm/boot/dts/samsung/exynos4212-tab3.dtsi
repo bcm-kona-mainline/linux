@@ -102,6 +102,7 @@
 			linux,code = <KEY_HOME>;
 			label = "home";
 			debounce-interval = <10>;
+			wakeup-source;
 		};
 
 		switch-hall-sensor {
