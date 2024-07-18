@@ -302,6 +302,18 @@
 		enable-active-high;
 	};
 
+	emmc_reg: voltage-regulator-5 {
+		compatible = "regulator-fixed";
+		regulator-name = "EMMC_2.8V";
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		vin-supply = <&ldo18_reg>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&emmc_enable>;
+		gpio = <&gpk0 2 GPIO_ACTIVE_HIGH>; /* eMMC_EN */
+		enable-active-high;
+	};
+
 	battery: battery {
 		compatible = "simple-battery";
 		constant-charge-current-max-microamp = <1800000>;
@@ -699,6 +711,13 @@
 				regulator-always-on;
 			};
 
+			ldo18_reg: LDO18 {
+				regulator-name = "VMEM_VDD_2.8V";
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <2800000>;
+				op_mode = <1>;
+			};
+
 			ldo19_reg: LDO19 {
 				regulator-name = "VLED_IC_1.9V";
 				regulator-min-microvolt = <1900000>;
@@ -839,7 +858,7 @@
 	broken-cd;
 	non-removable;
 	card-detect-delay = <200>;
-	vmmc-supply = <&ldo22_reg>;
+	vmmc-supply = <&emmc_reg>;
 	clock-frequency = <400000000>;
 	samsung,dw-mshc-ciu-div = <0>;
 	samsung,dw-mshc-sdr-timing = <2 3>;
@@ -999,6 +1018,12 @@
 
 	backlight_reset: backlight-reset-pins {
 		samsung,pins = "gpm0-1";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+	};
+
+	emmc_enable: emmc-enable-pins {
+		samsung,pins = "gpk0-2";
 		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
 		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
 	};
