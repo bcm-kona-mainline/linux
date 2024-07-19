@@ -526,8 +526,7 @@
 	status = "okay";
 
 	touchscreen@48 {
-		/* MELFAS MMS252, using MMS114 compatible for now */
-		compatible = "melfas,mms114";
+		compatible = "melfas,mms252", "melfas,mms114";
 		reg = <0x48>;
 		interrupt-parent = <&gpb>;
 		interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
