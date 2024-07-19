@@ -192,6 +192,29 @@ static void exynos5250_isol(struct samsung_usb2_phy_instance *inst, bool on)
 	regmap_update_bits(drv->reg_pmu, offset, mask, on ? 0 : mask);
 }
 
+static int exynos5250_set_mode_switch(struct samsung_usb2_phy_driver *drv,
+			enum samsung_usb2_mode_switch mode)
+{
+	unsigned int val;
+
+	if (!drv->cfg->has_mode_switch)
+		return 0; /* Nothing to do */
+
+	switch (mode) {
+	case EXYNOS_MODE_SWITCH_DEVICE:
+		val = EXYNOS_5250_MODE_SWITCH_DEVICE;
+		break;
+	case EXYNOS_MODE_SWITCH_HOST:
+		val = EXYNOS_5250_MODE_SWITCH_HOST;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return regmap_update_bits(drv->reg_sys, EXYNOS_5250_MODE_SWITCH_OFFSET,
+					EXYNOS_5250_MODE_SWITCH_MASK, val);
+}
+
 static int exynos5250_power_on(struct samsung_usb2_phy_instance *inst)
 {
 	struct samsung_usb2_phy_driver *drv = inst->drv;
@@ -203,10 +226,7 @@ static int exynos5250_power_on(struct samsung_usb2_phy_instance *inst)
 
 	switch (inst->cfg->id) {
 	case EXYNOS5250_DEVICE:
-		regmap_update_bits(drv->reg_sys,
-				   EXYNOS_5250_MODE_SWITCH_OFFSET,
-				   EXYNOS_5250_MODE_SWITCH_MASK,
-				   EXYNOS_5250_MODE_SWITCH_DEVICE);
+		exynos5250_set_mode_switch(drv, EXYNOS_MODE_SWITCH_DEVICE);
 
 		/* OTG configuration */
 		otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);
@@ -408,6 +428,7 @@ const struct samsung_usb2_phy_config exynos5250_usb2_phy_config = {
 	.num_phys		= ARRAY_SIZE(exynos5250_phys),
 	.phys			= exynos5250_phys,
 	.rate_to_clk		= exynos5250_rate_to_clk,
+	.set_mode_switch	= exynos5250_set_mode_switch,
 };
 
 const struct samsung_usb2_phy_config exynos5420_usb2_phy_config = {
@@ -415,4 +436,5 @@ const struct samsung_usb2_phy_config exynos5420_usb2_phy_config = {
 	.num_phys		= ARRAY_SIZE(exynos5420_phys),
 	.phys			= exynos5420_phys,
 	.rate_to_clk		= exynos5250_rate_to_clk,
+	.set_mode_switch	= exynos5250_set_mode_switch,
 };
