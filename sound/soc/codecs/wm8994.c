@@ -4123,7 +4123,7 @@ static irqreturn_t wm8994_fifo_error(int irq, void *data)
 {
 	struct snd_soc_component *component = data;
 
-	dev_err(component->dev, "FIFO error\n");
+	dev_err_once(component->dev, "FIFO error\n");
 
 	return IRQ_HANDLED;
 }
