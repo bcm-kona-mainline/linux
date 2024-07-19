@@ -47,6 +47,8 @@ struct samsung_usb2_phy_driver {
 	void __iomem *reg_phy;
 	struct regmap *reg_pmu;
 	struct regmap *reg_sys;
+	struct extcon_dev *extcon;
+	struct notifier_block extcon_notify;
 	spinlock_t lock;
 	struct samsung_usb2_phy_instance instances[];
 };

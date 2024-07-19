@@ -226,7 +226,9 @@ static int exynos5250_power_on(struct samsung_usb2_phy_instance *inst)
 
 	switch (inst->cfg->id) {
 	case EXYNOS5250_DEVICE:
-		exynos5250_set_mode_switch(drv, EXYNOS_MODE_SWITCH_DEVICE);
+		if (!drv->extcon)
+			exynos5250_set_mode_switch(drv,
+						   EXYNOS_MODE_SWITCH_DEVICE);
 
 		/* OTG configuration */
 		otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);

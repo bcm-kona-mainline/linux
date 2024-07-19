@@ -298,11 +298,13 @@ static int exynos4x12_power_on(struct samsung_usb2_phy_instance *inst)
 		return 0;
 
 	if (inst->cfg->id == EXYNOS4x12_HOST) {
-		exynos4x12_set_mode_switch(drv, EXYNOS_MODE_SWITCH_HOST);
+		if (!drv->extcon)
+			exynos4x12_set_mode_switch(drv,
+						   EXYNOS_MODE_SWITCH_HOST);
 		exynos4x12_power_on_int(&drv->instances[EXYNOS4x12_DEVICE]);
 	}
 
-	if (inst->cfg->id == EXYNOS4x12_DEVICE)
+	if (inst->cfg->id == EXYNOS4x12_DEVICE && !drv->extcon)
 		exynos4x12_set_mode_switch(drv, EXYNOS_MODE_SWITCH_DEVICE);
 
 	if (inst->cfg->id == EXYNOS4x12_HSIC0 ||
@@ -332,7 +334,7 @@ static int exynos4x12_power_off(struct samsung_usb2_phy_instance *inst)
 	if (inst->ext_cnt-- > 1)
 		return 0;
 
-	if (inst->cfg->id == EXYNOS4x12_DEVICE)
+	if (inst->cfg->id == EXYNOS4x12_DEVICE && !drv->extcon)
 		exynos4x12_set_mode_switch(drv, EXYNOS_MODE_SWITCH_HOST);
 
 	if (inst->cfg->id == EXYNOS4x12_HOST)
