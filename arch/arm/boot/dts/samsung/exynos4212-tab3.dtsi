@@ -442,6 +442,10 @@
 	};
 };
 
+&ehci {
+	status = "okay";
+};
+
 &exynos_usbphy {
 	vbus-supply = <&esafeout1_reg>;
 	samsung,usb-connector = <&usb_conn>;
@@ -833,6 +837,10 @@
 	bus-width = <8>;
 	cap-mmc-highspeed;
 	mmc-ddr-1_8v;
+	status = "okay";
+};
+
+&ohci {
 	status = "okay";
 };
 
