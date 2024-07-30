@@ -223,11 +223,6 @@
 				esafeout2_reg: ESAFEOUT2 {
 					regulator-name = "ESAFEOUT2";
 				};
-				charger_reg: CHARGER {
-					regulator-name = "CHARGER";
-					regulator-min-microamp = <60000>;
-					regulator-max-microamp = <2580000>;
-				};
 			};
 
 			motor-driver {
