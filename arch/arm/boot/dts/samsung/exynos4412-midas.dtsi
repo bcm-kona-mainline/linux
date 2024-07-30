@@ -542,6 +542,10 @@
 	samsung,pll-clock-frequency = <24000000>;
 };
 
+&ehci {
+	status = "okay";
+};
+
 &exynos_usbphy {
 	vbus-supply = <&esafeout1_reg>;
 	samsung,usb-connector = <&usb_conn>;
@@ -1078,6 +1082,10 @@
 	status = "okay";
 	bus-width = <8>;
 	cap-mmc-highspeed;
+};
+
+&ohci {
+	status = "okay";
 };
 
 &pmu_system_controller {
