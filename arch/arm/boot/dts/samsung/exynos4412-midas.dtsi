@@ -238,6 +238,7 @@
 
 			charger {
 				compatible = "maxim,max77693-charger";
+				monitored-battery = <&battery>;
 
 				maxim,constant-microvolt = <4350000>;
 				maxim,min-system-microvolt = <3600000>;
@@ -371,6 +372,11 @@
 		reset-gpios = <&gpj0 0 GPIO_ACTIVE_LOW>;
 		clocks = <&max77686 MAX77686_CLK_PMIC>;
 		clock-names = "ext_clock";
+	};
+
+	battery: battery {
+		compatible = "simple-battery";
+		constant-charge-current-max-microamp = <1800000>;
 	};
 
 	sound: sound {
