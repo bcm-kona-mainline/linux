@@ -145,7 +145,7 @@
 	/* Apps bus */
 	apps: apps-bus@3e300000 {
 		compatible = "simple-bus";
-		ranges = <0 0x3e300000 0x01b77000>;
+		ranges = <0 0x3e300000 0x01c02000>;
 		#address-cells = <1>;
 		#size-cells = <1>;
 
