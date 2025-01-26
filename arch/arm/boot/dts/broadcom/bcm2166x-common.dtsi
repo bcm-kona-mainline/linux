@@ -352,6 +352,11 @@
 					     "sdio2_sleep",
 					     "sdio3_sleep",
 					     "sdio4_sleep",
+					     "usb_ic_ahb",
+					     "usb_ic",
+					     "usbh_ahb",
+					     "usbh_48m",
+					     "usbh_12m",
 					     "usb_otg_ahb";
 		};
 	};
