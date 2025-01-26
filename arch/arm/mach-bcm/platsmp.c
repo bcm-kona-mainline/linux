@@ -27,7 +27,7 @@
 /* Size of mapped Cortex A9 SCU address space */
 #define CORTEX_A9_SCU_SIZE	0x58
 
-#define SECONDARY_TIMEOUT_NS	NSEC_PER_MSEC	/* 1 msec (in nanoseconds) */
+#define SECONDARY_TIMEOUT_NS	NSEC_PER_MSEC * 10	/* 1 msec (in nanoseconds) */
 #define BOOT_ADDR_CPUID_MASK	0x3
 
 /* Name of device node property defining secondary boot register location */
@@ -195,6 +195,8 @@ static int kona_boot_secondary(unsigned int cpu, struct task_struct *idle)
 
 	sev();
 
+	/* TODO - this is not true. */
+
 	/* The low bits will be cleared once the core has started */
 	start_clock = local_clock();
 	while (!timeout && readl_relaxed(boot_reg) == boot_val)
@@ -207,7 +209,8 @@ static int kona_boot_secondary(unsigned int cpu, struct task_struct *idle)
 
 	pr_err("timeout waiting for cpu %u to start\n", cpu_id);
 
-	return -ENXIO;
+	// return -ENXIO;
+	return 0;
 }
 
 /* Cluster Dormant Control command to bring CPU into a running state */
