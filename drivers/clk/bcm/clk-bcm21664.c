@@ -169,6 +169,48 @@ static struct peri_clk_data sdio4_sleep_data = {
 	.gate		= HW_SW_GATE(0x0360, 18, 2, 3),
 };
 
+static struct bus_clk_data usb_ic_ahb_data = {
+	.policy		= POLICY(0x0010, 9),
+	.gate		= HW_SW_GATE(0x0354, 16, 1, 0),
+};
+
+static struct peri_clk_data usb_ic_data = {
+	.policy		= POLICY(0x0010, 9),
+	.clocks		= CLOCKS("ref_crystal",
+				 "var_96m",
+				 "ref_96m"),
+	.gate		= HW_SW_GATE(0x0354, 18, 3, 2),
+	.sel		= SELECTOR(0x0a24, 0, 2),
+	.trig		= TRIGGER(0x0afc, 7),
+};
+
+static struct bus_clk_data usbh_ahb_data = {
+	.policy		= POLICY(0x0010, 10),
+	.gate		= HW_SW_GATE(0x0350, 16, 1, 0),
+};
+
+static struct peri_clk_data usbh_48m_data = {
+	.policy		= POLICY(0x0010, 10),
+	.clocks		= CLOCKS("ref_crystal",
+				 "var_96m",
+				 "ref_96m"),
+	.gate		= HW_SW_GATE(0x0350, 18, 3, 2),
+	.hyst		= HYST(0x0350, 11, 10),
+	.sel		= SELECTOR(0x0a1c, 0, 2),
+	.trig		= TRIGGER(0x0afc, 4),
+};
+
+static struct peri_clk_data usbh_12m_data = {
+	.policy		= POLICY(0x0010, 10),
+	.clocks		= CLOCKS("ref_crystal",
+				 "var_96m",
+				 "ref_96m"),
+	.gate		= HW_SW_GATE(0x0350, 20, 5, 4),
+	.hyst		= HYST(0x0350, 13, 12),
+	.sel		= SELECTOR(0x0a1c, 0, 2),
+	.trig		= TRIGGER(0x0afc, 4),
+};
+
 static struct bus_clk_data usb_otg_ahb_data = {
 	.policy		= POLICY(0x0010, 11),
 	.gate		= HW_SW_GATE(0x0348, 16, 0, 1),
@@ -205,6 +247,16 @@ static struct ccu_data master_ccu_data = {
 			KONA_CLK(master, sdio3_sleep, peri),
 		[BCM21664_MASTER_CCU_SDIO4_SLEEP] =
 			KONA_CLK(master, sdio4_sleep, peri),
+		[BCM21664_MASTER_CCU_USB_IC_AHB] =
+			KONA_CLK(master, usb_ic_ahb, bus),
+		[BCM21664_MASTER_CCU_USB_IC] =
+			KONA_CLK(master, usb_ic, peri),
+		[BCM21664_MASTER_CCU_USBH_AHB] =
+			KONA_CLK(master, usbh_ahb, bus),
+		[BCM21664_MASTER_CCU_USBH_48M] =
+			KONA_CLK(master, usbh_48m, peri),
+		[BCM21664_MASTER_CCU_USBH_12M] =
+			KONA_CLK(master, usbh_12m, peri),
 		[BCM21664_MASTER_CCU_USB_OTG_AHB] =
 			KONA_CLK(master, usb_otg_ahb, bus),
 		[BCM21664_MASTER_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
