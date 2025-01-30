@@ -25,6 +25,17 @@ static void dwc2_set_bcm_params(struct dwc2_hsotg *hsotg)
 	p->ahbcfg = 0x10;
 }
 
+static void dwc2_set_bcm_kona_params(struct dwc2_hsotg *hsotg)
+{
+	struct dwc2_core_params *p = &hsotg->params;
+
+	p->otg_caps.hnp_support = false;
+	p->otg_caps.srp_support = false;
+	p->host_dma = true;
+	p->ahbcfg = GAHBCFG_HBSTLEN_INCR8 <<
+		GAHBCFG_HBSTLEN_SHIFT;
+}
+
 static void dwc2_set_his_params(struct dwc2_hsotg *hsotg)
 {
 	struct dwc2_core_params *p = &hsotg->params;
@@ -288,6 +299,7 @@ static void dwc2_set_stm32mp15_hsotg_params(struct dwc2_hsotg *hsotg)
 
 const struct of_device_id dwc2_of_match_table[] = {
 	{ .compatible = "brcm,bcm2835-usb", .data = dwc2_set_bcm_params },
+	{ .compatible = "brcm,kona-hsotg", .data = dwc2_set_bcm_kona_params },
 	{ .compatible = "hisilicon,hi6220-usb", .data = dwc2_set_his_params },
 	{ .compatible = "ingenic,jz4775-otg", .data = dwc2_set_jz4775_params },
 	{ .compatible = "ingenic,jz4780-otg", .data = dwc2_set_jz4775_params },
