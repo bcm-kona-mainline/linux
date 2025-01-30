@@ -46,6 +46,7 @@ properties:
               - apm,xgene-rb
               - apm,xgene-scu
               - brcm,cru-clkset
+              - brcm,kona-chipreg
               - brcm,sr-cdru
               - brcm,sr-mhb
               - freecom,fsg-cs2-system-controller
