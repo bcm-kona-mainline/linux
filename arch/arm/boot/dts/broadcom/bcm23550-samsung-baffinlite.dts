@@ -81,6 +81,17 @@
 		};
 	};
 
+	/* GPIO regulator for WiFi */
+	wl_reg: regulator-gpio-wlan {
+		compatible = "regulator-fixed";
+		regulator-name = "WL_REG_ON";
+		regulator-min-microvolt = <3000000>;
+		regulator-max-microvolt = <3000000>;
+		startup-delay-us = <100000>;
+		gpio = <&gpio 5 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
 	framebuffer@9e980000 {
 		compatible = "simple-framebuffer";
 		reg = <0x9e980000 (480 * 800 * 4)>;
@@ -94,14 +105,28 @@
 
 &uartb {
 	status = "okay";
+	clock-frequency = <48000000>;
+
+	bluetooth {
+		compatible = "brcm,bcm4330-bt";
+
+		shutdown-gpios = <&gpio 28 GPIO_ACTIVE_HIGH>;
+		device-wakeup-gpios = <&gpio 32 GPIO_ACTIVE_HIGH>;
+		host-wakeup-gpios = <&gpio 72 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio 71 GPIO_ACTIVE_LOW>;
+		interrupt-parent = <&gpio>;
+		interrupts = <72 IRQ_TYPE_EDGE_FALLING>;
+	};
 };
 
 &uartb2 {
 	status = "okay";
+	clock-frequency = <26000000>;
 };
 
 &uartb3 {
 	status = "okay";
+	clock-frequency = <26000000>;
 };
 
 &usbotg {
@@ -127,6 +152,11 @@
 &bsc3 {
 	clock-frequency = <400000>;
 	status = "okay";
+
+	magnetometer@c {
+		compatible = "alps,hscdtd008a";
+		reg = <0x0c>;
+	};
 
 	accel@18 {
 		compatible = "bosch,bma254";
@@ -341,25 +371,57 @@
 	};
 };
 
+&pinctrl {
+	sd_pins: sd-pins {
+		pins = "sdcmd", "sddat0", "sddat1", "sddat2", "sddat3";
+		bias-pull-down;
+	};
+
+	mmc1_pins: mmc1-pins {
+		pins = "mmc1cmd", "mmc1dat0", "mmc1dat1", "mmc1dat2", "mmc1dat3";
+		bias-pull-up;
+	};
+};
+
 /* SD card */
 &sdio1 {
 	max-frequency = <48000000>;
 	cd-gpio = <&gpio 91 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 	status = "okay";
+	vmmc-supply = <&sdldo_reg>;
+	vqmmc-supply = <&sdxldo_reg>;
+	pinctrl-0 = <&sd_pins>;
+	pinctrl-names = "default";
 };
 
 /* Internal storage */
 &sdio2 {
-	non-removable;
 	max-frequency = <52000000>;
+	non-removable;
 	bus-width = <8>;
 	status = "okay";
 };
 
-/* WiFi (not set up yet) */
-/*
+/* WiFi */
 &sdio3 {
 	max-frequency = <48000000>;
+
+	pinctrl-0 = <&mmc1_pins>;
+	pinctrl-names = "default";
+	/* Actually a regulator for the WiFi chip */
+	vmmc-supply = <&wl_reg>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
 	status = "okay";
+
+	wifi@1 {
+		compatible = "brcm,bcm4330-fmac", "brcm,bcm4329-fmac";
+		reg = <1>;
+
+		interrupt-parent = <&gpio>;
+		interrupts = <74 IRQ_TYPE_EDGE_FALLING>;
+		interrupt-names = "host-wake";
+	};
 };
-*/
