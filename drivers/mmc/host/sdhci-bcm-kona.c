@@ -49,8 +49,8 @@ static int sdhci_bcm_kona_sd_reset(struct sdhci_host *host)
 	unsigned int val;
 	unsigned long timeout;
 
-	/* This timeout should be sufficent for core to reset */
-	timeout = jiffies + msecs_to_jiffies(100);
+	/* Reset host controller by setting 'Software Reset for All' */
+	sdhci_reset(host, SDHCI_RESET_ALL);
 
 	/* reset the host using the top level reset */
 	val = sdhci_readl(host, KONA_SDHOST_CORECTRL);
