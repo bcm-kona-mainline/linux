@@ -7,6 +7,7 @@
 #include <dt-bindings/leds/common.h>
 
 #include "bcm23550.dtsi"
+#include "bcm2166x-pinctrl.dtsi"
 
 / {
 	model = "Samsung Galaxy Grand Neo (GT-I9060)";
@@ -14,7 +15,7 @@
 
 	chosen {
 		stdout-path = "/slaves@3e000000/serial@2:115200n8";
-		bootargs = "console=ttyS2,115200n8 mem=994M ignore_loglevel PMOS_NO_OUTPUT_REDIRECT nosmp panic=5"; /* TODO: fix smp so we can reenable it */
+		bootargs = "console=ttyS2,115200n8 mem=994M";
 	};
 
 	memory@80000000 {
@@ -37,41 +38,44 @@
 	gpio-keys {
 		compatible = "gpio-keys";
 
-		volume-up {
+		key-volume-up {
 			label = "Volume Up";
 			gpios = <&gpio 9 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_VOLUMEUP>;
-			/*debounce-interval = <64>;*/
 		};
-		home {
+
+		key-home {
 			label = "Home";
 			gpios = <&gpio 10 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_HOMEPAGE>;
 		};
-		volume-down {
+
+		key-volume-down {
 			label = "Volume Down";
 			gpios = <&gpio 11 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_VOLUMEDOWN>;
 		};
 	};
 
+	/* Touchkey LED */
 	led-heartbeat {
 		compatible = "regulator-led";
 		vled-supply = <&gpldo3_reg>;
-		function = LED_FUNCTION_STATUS;
 		color = <LED_COLOR_ID_WHITE>;
+
+		/* Temporary, drop before upstreaming */
+		function = LED_FUNCTION_STATUS;
 		linux,default-trigger = "heartbeat";
 	};
 
 	/* USB switch */
-	i2c-gpio {
+	i2c-musb {
 		#address-cells = <1>;
 		#size-cells = <0>;
 		compatible = "i2c-gpio";
 		sda-gpios = <&gpio 113 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
 		scl-gpios = <&gpio 114 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
 		i2c-gpio,delay-us = <2>;
-		i2c-gpio,bus = <8>;
 
 		musb@25 {
 			compatible = "fcs,fsa9480";
@@ -139,18 +143,12 @@
 	status = "okay";
 };
 
-&bsc1 {
-	clock-frequency = <400000>;
-	status = "okay";
-};
-
-&bsc2 {
-	clock-frequency = <400000>;
-	status = "okay";
-};
-
 &bsc3 {
 	clock-frequency = <400000>;
+
+	pinctrl-0 = <&bsc3_pins>;
+	pinctrl-names = "default";
+
 	status = "okay";
 
 	magnetometer@c {
@@ -189,23 +187,36 @@
 
 &bsc4 {
 	clock-frequency = <400000>;
+
+	pinctrl-0 = <&bsc4_pins>;
+	pinctrl-names = "default";
+
 	status = "okay";
 
 	/* Melfas MMS144 touchscreen, using the mms136 compatible for now */
 	touchscreen@48 {
 		compatible = "melfas,mms136";
 		reg = <0x48>;
+
 		interrupt-parent = <&gpio>;
 		interrupts = <73 IRQ_TYPE_EDGE_FALLING>;
+
 		vdd-supply = <&gpldo2_reg>;
 		avdd-supply = <&iosr1_reg>;
+
 		touchscreen-size-x = <480>;
 		touchscreen-size-y = <800>;
+
+		linux,keycodes = <KEY_MENU KEY_BACK>;
 	};
 };
 
 &pmu_bsc {
 	clock-frequency = <3400000>; /* 3.2mhz? Downstream refers to this as a HS bus, but it doesn't give any speed information other than that. */
+
+	pinctrl-0 = <&pmbsc_pins>;
+	pinctrl-names = "default";
+
 	status = "okay";
 
 	pmu: pmu@8 {
@@ -371,34 +382,30 @@
 	};
 };
 
-&pinctrl {
-	sd_pins: sd-pins {
-		pins = "sdcmd", "sddat0", "sddat1", "sddat2", "sddat3";
-		bias-pull-up;
-	};
-
-	mmc1_pins: mmc1-pins {
-		pins = "mmc1cmd", "mmc1dat0", "mmc1dat1", "mmc1dat2", "mmc1dat3";
-		bias-pull-up;
-	};
-};
-
 /* SD card */
 &sdio1 {
 	max-frequency = <48000000>;
-	cd-gpio = <&gpio 91 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-	status = "okay";
+
+	cd-gpios = <&gpio 91 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 	vmmc-supply = <&sdldo_reg>;
 	vqmmc-supply = <&sdxldo_reg>;
-	pinctrl-0 = <&sd_pins>;
+
+	pinctrl-0 = <&sd_width4_pins>;
 	pinctrl-names = "default";
+
+	status = "okay";
 };
 
 /* Internal storage */
 &sdio2 {
 	max-frequency = <52000000>;
+
 	non-removable;
 	bus-width = <8>;
+
+	pinctrl-0 = <&mmc0_width8_pins>;
+	pinctrl-names = "default";
+
 	status = "okay";
 };
 
@@ -406,13 +413,14 @@
 &sdio3 {
 	max-frequency = <48000000>;
 
-	pinctrl-0 = <&mmc1_pins>;
-	pinctrl-names = "default";
 	/* Actually a regulator for the WiFi chip */
 	vmmc-supply = <&wl_reg>;
 
 	#address-cells = <1>;
 	#size-cells = <0>;
+
+	pinctrl-0 = <&mmc1_width4_pins>;
+	pinctrl-names = "default";
 
 	status = "okay";
 

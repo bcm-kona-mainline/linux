@@ -86,6 +86,10 @@
 	compatible = "brcm,bcm23550-gpio", "brcm,kona-gpio";
 };
 
+&pmu_bsc {
+	compatible = "brcm,bcm23550-i2c", "brcm,kona-i2c";
+};
+
 &smc {
 	compatible = "brcm,bcm23550-smc", "brcm,kona-smc";
 };

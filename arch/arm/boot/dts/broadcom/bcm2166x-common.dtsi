@@ -59,7 +59,7 @@
 		};
 
 		pmu_bsc: i2c@100d000 {
-			compatible = "brcm,kona-i2c";
+			/* Compatible filled by SoC DTSI */
 			reg = <0x0100d000 0xfff>;
 			interrupts = <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>;
 			#address-cells = <1>;
