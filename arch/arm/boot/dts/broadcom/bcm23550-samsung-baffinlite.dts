@@ -374,7 +374,7 @@
 &pinctrl {
 	sd_pins: sd-pins {
 		pins = "sdcmd", "sddat0", "sddat1", "sddat2", "sddat3";
-		bias-pull-down;
+		bias-pull-up;
 	};
 
 	mmc1_pins: mmc1-pins {
