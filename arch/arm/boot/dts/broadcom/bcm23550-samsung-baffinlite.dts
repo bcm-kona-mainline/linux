@@ -7,7 +7,6 @@
 #include <dt-bindings/leds/common.h>
 
 #include "bcm23550.dtsi"
-#include "bcm2166x-pinctrl.dtsi"
 
 / {
 	model = "Samsung Galaxy Grand Neo (GT-I9060)";
