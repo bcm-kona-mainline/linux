@@ -154,6 +154,22 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
+		dmac: dma@d03000 {
+			compatible = "arm,pl330", "arm,primecell";
+			reg = <0x00d03000 0x1000>;
+			interrupts = <GIC_SPI 184 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 185 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 186 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 187 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&master_ccu BCM21664_MASTER_CCU_DMA_AXI>;
+			clock-names = "apb_pclk";
+			#dma-cells = <1>;
+		};
+
 		usbotg: usb@e20000 {
 			compatible = "snps,dwc2";
 			reg = <0x00e20000 0x10000>;
@@ -362,7 +378,8 @@
 					     "usbh_ahb",
 					     "usbh_48m",
 					     "usbh_12m",
-					     "usb_otg_ahb";
+					     "usb_otg_ahb",
+					     "dma_axi";
 		};
 	};
 };

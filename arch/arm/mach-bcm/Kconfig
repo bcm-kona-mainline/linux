@@ -92,6 +92,8 @@ config ARCH_BCM_MOBILE
 	select ARM_ERRATA_754322
 	select ARM_ERRATA_775420
 	select ARM_GIC
+	select ARM_AMBA
+	select PL330_DMA if DMADEVICES
 	select GPIO_BCM_KONA
 	select HAVE_ARM_ARCH_TIMER
 	select PINCTRL

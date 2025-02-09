@@ -216,6 +216,12 @@ static struct bus_clk_data usb_otg_ahb_data = {
 	.gate		= HW_SW_GATE(0x0348, 16, 0, 1),
 };
 
+static struct bus_clk_data dma_axi_data = {
+	.policy		= POLICY(0x0010, 1),
+	.gate		= HW_SW_GATE(0x0300, 16, 1, 0),
+	.hyst		= HYST(0x0300, 8, 9),
+};
+
 static struct ccu_data master_ccu_data = {
 	BCM21664_CCU_COMMON(master, MASTER),
 	.policy		= {
@@ -259,6 +265,8 @@ static struct ccu_data master_ccu_data = {
 			KONA_CLK(master, usbh_12m, peri),
 		[BCM21664_MASTER_CCU_USB_OTG_AHB] =
 			KONA_CLK(master, usb_otg_ahb, bus),
+		[BCM21664_MASTER_CCU_DMA_AXI] =
+			KONA_CLK(master, dma_axi, bus),
 		[BCM21664_MASTER_CCU_CLOCK_COUNT] = LAST_KONA_CLK,
 	},
 };
