@@ -32,6 +32,20 @@ struct bcm590xx {
 	struct regmap *regmap_pri;
 	struct regmap *regmap_sec;
 	unsigned int id;
+
+	/* Chip revision, read from PMUREV reg */
+	u8 rev_dig;
+	u8 rev_ana;
 };
+
+/* Known chip revision IDs */
+#define BCM59054_REV_DIG_A1		1
+#define BCM59054_REV_ANA_A1		2
+
+#define BCM59056_REV_DIG_A0		1
+#define BCM59056_REV_ANA_A0		1
+
+#define BCM59056_REV_DIG_B0		2
+#define BCM59056_REV_ANA_B0		2
 
 #endif /*  __LINUX_MFD_BCM590XX_H */
