@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Device tree for Samsung Galaxy S Duos 2 (kyleprods).
+ *
+ * Copyright (c) 2025 Artur Weber <aweber.kernel@gmail.com>
+ */
+
+/dts-v1/;
+#include "bcm21664-samsung-kylepro-common.dtsi"
+
+/ {
+	model = "Samsung Galaxy S Duos 2 (GT-S7582)";
+	compatible = "samsung,kyleprods", "brcm,bcm21664";
+	chassis-type = "handset";
+};
