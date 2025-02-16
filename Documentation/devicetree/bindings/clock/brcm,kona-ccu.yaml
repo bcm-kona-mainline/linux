@@ -127,6 +127,8 @@ allOf:
           items:
             - const: hub_timer
             - const: hub_timer_apb
+            - const: pmu_bsc
+            - const: pmu_bsc_apb
   - if:
       properties:
         compatible:
