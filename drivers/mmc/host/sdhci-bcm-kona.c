@@ -190,7 +190,8 @@ static const struct sdhci_pltfm_data sdhci_pltfm_data_kona = {
 		SDHCI_QUIRK_BROKEN_TIMEOUT_VAL | SDHCI_QUIRK_32BIT_DMA_ADDR |
 		SDHCI_QUIRK_32BIT_DMA_SIZE | SDHCI_QUIRK_32BIT_ADMA_SIZE |
 		SDHCI_QUIRK_FORCE_BLK_SZ_2048 |
-		SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
+		SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN |
+		SDHCI_QUIRK_BROKEN_DMA | SDHCI_QUIRK_BROKEN_ADMA,
 };
 
 static const struct of_device_id sdhci_bcm_kona_of_match[] = {
