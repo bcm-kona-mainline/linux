@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Device tree for Samsung Galaxy Trend Plus (kylepro).
+ *
+ * Copyright (c) 2025 Artur Weber <aweber.kernel@gmail.com>
+ */
+
+/dts-v1/;
+#include "bcm21664-samsung-kylepro-common.dtsi"
+
+/ {
+	model = "Samsung Galaxy Trend Plus (GT-S7580)";
+	compatible = "samsung,kylepro", "brcm,bcm21664";
+	chassis-type = "handset";
+};
