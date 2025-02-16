@@ -175,6 +175,7 @@ config MFD_BCM590XX
 	tristate "Broadcom BCM590xx PMUs"
 	select MFD_CORE
 	select REGMAP_I2C
+	select REGMAP_IRQ
 	depends on I2C
 	help
 	  Support for the BCM590xx PMUs from Broadcom
