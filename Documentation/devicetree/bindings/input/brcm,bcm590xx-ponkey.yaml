@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/input/brcm,bcm590xx-ponkey.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Broadcom BCM590xx PMU power-on key (PONKEY)
+
+description: |
+  This is a part of device tree bindings for the BCM590xx power
+  management unit.
+
+  See Documentation/devicetree/bindings/mfd/brcm,bcm590xx.yaml for
+  additional information and example.
+
+maintainers:
+  - Artur Weber <aweber.kernel@gmail.com>
+
+properties:
+  compatible:
+    enum:
+      - brcm,bcm59054-ponkey
+      - brcm,bcm59056-ponkey
+
+  press-debounce-interval-ns:
+    description:
+      Button press debounce interval in nanoseconds; defaults to 100ms
+    default: 100000000
+    # 330us, 1.2ms, 10ms, 50ms, 100ms, 500ms, 1000ms, 2000ms
+    enum: [ 330, 1200000, 10000000, 50000000, 100000000, 500000000, 1000000000,
+            2000000000 ]
+
+  release-debounce-interval-ns:
+    description:
+      Button release debounce interval in nanoseconds; defaults to 100ms
+    default: 100000000
+    # 330us, 1.2ms, 10ms, 50ms, 100ms, 500ms, 1000ms, 2000ms
+    enum: [ 330, 1200000, 10000000, 50000000, 100000000, 500000000, 1000000000,
+            2000000000 ]
+
+required:
+  - compatible
+
+additionalProperties: false
