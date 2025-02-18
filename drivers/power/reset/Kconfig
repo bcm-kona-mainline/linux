@@ -54,6 +54,16 @@ config POWER_RESET_AXXIA
 
 	  Say Y if you have an Axxia family SoC.
 
+config POWER_RESET_BCM590XX
+	bool "Broadcom BCM590XX poweroff driver"
+	depends on MFD_BCM590XX
+	default MFD_BCM590XX
+	help
+	  This driver provides poweroff support for Broadcom BCM590XX PMUs.
+
+	  Say Y here if you have a Broadcom BCM590XX PMU and you wish
+	  to have poweroff support.
+
 config POWER_RESET_BRCMKONA
 	bool "Broadcom Kona reset driver"
 	depends on ARM || COMPILE_TEST
