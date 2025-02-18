@@ -362,6 +362,7 @@
 &sdio2 {
 	max-frequency = <52000000>;
 
+	keep-power-in-suspend;
 	non-removable;
 	bus-width = <8>;
 
@@ -383,6 +384,9 @@
 
 	pinctrl-0 = <&mmc1_width4_pins>;
 	pinctrl-names = "default";
+
+	keep-power-in-suspend;
+	non-removable;
 
 	status = "okay";
 
