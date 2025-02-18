@@ -21,6 +21,9 @@ properties:
   interrupts:
     maxItems: 1
 
+  ponkey:
+    $ref: /schemas/input/brcm.bcm590xx-ponkey.yaml
+
   regulators:
     type: object
 
@@ -65,6 +68,10 @@ examples:
             compatible = "brcm,bcm59056";
             reg = <0x08>;
             interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_HIGH>;
+
+            ponkey {
+                compatible = "brcm,bcm59056-ponkey";
+            }
 
             regulators {
                 rfldo {
