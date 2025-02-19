@@ -93,7 +93,7 @@ static int __rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm)
 		memset(tm, 0, sizeof(struct rtc_time));
 		err = rtc->ops->read_time(rtc->dev.parent, tm);
 		if (err < 0) {
-			dev_dbg(&rtc->dev, "read_time: fail to read: %d\n",
+			dev_err(&rtc->dev, "read_time: fail to read: %d\n",
 				err);
 			return err;
 		}
@@ -102,7 +102,7 @@ static int __rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm)
 
 		err = rtc_valid_tm(tm);
 		if (err < 0)
-			dev_dbg(&rtc->dev, "read_time: rtc_time isn't valid\n");
+			dev_err(&rtc->dev, "read_time: rtc_time isn't valid\n");
 	}
 	return err;
 }
