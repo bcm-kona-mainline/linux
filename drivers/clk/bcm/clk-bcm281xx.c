@@ -19,6 +19,8 @@ static struct peri_clk_data frac_1m_data = {
 	.clocks		= CLOCKS("ref_crystal"),
 };
 
+#define BCM281XX_ROOT_CCU_CLOCK_COUNT	(BCM281XX_ROOT_CCU_FRAC_1M + 1)
+
 static struct ccu_data root_ccu_data = {
 	BCM281XX_CCU_COMMON(root, ROOT),
 	.kona_clks	= {
@@ -57,6 +59,8 @@ static struct peri_clk_data pmu_bsc_var_data = {
 	.trig		= TRIGGER(0x0a40, 2),
 };
 
+#define BCM281XX_AON_CCU_CLOCK_COUNT	(BCM281XX_AON_CCU_PMU_BSC_VAR + 1)
+
 static struct ccu_data aon_ccu_data = {
 	BCM281XX_CCU_COMMON(aon, AON),
 	.kona_clks	= {
@@ -79,6 +83,8 @@ static struct peri_clk_data tmon_1m_data = {
 	.sel		= SELECTOR(0x0e74, 0, 2),
 	.trig		= TRIGGER(0x0e84, 1),
 };
+
+#define BCM281XX_HUB_CCU_CLOCK_COUNT	(BCM281XX_HUB_CCU_TMON_1M + 1)
 
 static struct ccu_data hub_ccu_data = {
 	BCM281XX_CCU_COMMON(hub, HUB),
@@ -171,6 +177,8 @@ static struct peri_clk_data hsic2_12m_data = {
 	.sel		= SELECTOR(0x0a38, 0, 2),
 	.trig		= TRIGGER(0x0afc, 5),
 };
+
+#define BCM281XX_MASTER_CCU_CLOCK_COUNT	(BCM281XX_MASTER_CCU_HSIC2_12M + 1)
 
 static struct ccu_data master_ccu_data = {
 	BCM281XX_CCU_COMMON(master, MASTER),
@@ -300,6 +308,8 @@ static struct peri_clk_data pwm_data = {
 	.div		= DIVIDER(0x0a70, 4, 3),
 	.trig		= TRIGGER(0x0afc, 15),
 };
+
+#define BCM281XX_SLAVE_CCU_CLOCK_COUNT	(BCM281XX_SLAVE_CCU_PWM + 1)
 
 static struct ccu_data slave_ccu_data = {
 	BCM281XX_CCU_COMMON(slave, SLAVE),

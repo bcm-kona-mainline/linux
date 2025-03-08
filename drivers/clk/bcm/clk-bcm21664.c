@@ -17,6 +17,8 @@ static struct peri_clk_data frac_1m_data = {
 	.clocks		= CLOCKS("ref_crystal"),
 };
 
+#define BCM21664_ROOT_CCU_CLOCK_COUNT	(BCM21664_ROOT_CCU_FRAC_1M + 1)
+
 static struct ccu_data root_ccu_data = {
 	BCM21664_CCU_COMMON(root, ROOT),
 	/* no policy control */
@@ -38,6 +40,8 @@ static struct peri_clk_data hub_timer_data = {
 	.sel		= SELECTOR(0x0a10, 0, 2),
 	.trig		= TRIGGER(0x0a40, 4),
 };
+
+#define BCM21664_AON_CCU_CLOCK_COUNT	(BCM21664_AON_CCU_HUB_TIMER + 1)
 
 static struct ccu_data aon_ccu_data = {
 	BCM21664_CCU_COMMON(aon, AON),
@@ -121,6 +125,8 @@ static struct peri_clk_data sdio4_sleep_data = {
 	.clocks		= CLOCKS("ref_32k"),	/* Verify */
 	.gate		= HW_SW_GATE(0x0360, 18, 2, 3),
 };
+
+#define BCM21664_MASTER_CCU_CLOCK_COUNT	(BCM21664_MASTER_CCU_SDIO4_SLEEP + 1)
 
 static struct ccu_data master_ccu_data = {
 	BCM21664_CCU_COMMON(master, MASTER),
@@ -224,6 +230,8 @@ static struct peri_clk_data bsc4_data = {
 	.sel		= SELECTOR(0x0a80, 0, 3),
 	.trig		= TRIGGER(0x0afc, 19),
 };
+
+#define BCM21664_SLAVE_CCU_CLOCK_COUNT	(BCM21664_SLAVE_CCU_BSC4 + 1)
 
 static struct ccu_data slave_ccu_data = {
 	BCM21664_CCU_COMMON(slave, SLAVE),
