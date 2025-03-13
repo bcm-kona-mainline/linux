@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (C) 2012 Broadcom Corporation
 
+#include "linux/clocksource.h"
+#include "linux/sched_clock.h"
 #include <linux/init.h>
 #include <linux/irq.h>
 #include <linux/interrupt.h>
@@ -126,6 +128,21 @@ static int kona_timer_shutdown(struct clock_event_device *evt)
 	return 0;
 }
 
+static u64 notrace kona_timer_sched_clock_read(void)
+{
+	uint32_t lsw, msw;
+
+	if (kona_timer_get_counter(timers.tmr_regs, &msw, &lsw))
+		return 0;
+
+	return ((u64)msw << 32) + (u64)lsw;
+}
+
+static u64 notrace kona_timer_clocksource_read(struct clocksource *cs)
+{
+	return kona_timer_sched_clock_read();
+}
+
 static struct clock_event_device kona_clockevent_timer = {
 	.name = "timer 1",
 	.features = CLOCK_EVT_FEAT_ONESHOT,
@@ -140,6 +157,14 @@ static void __init kona_timer_clockevents_init(void)
 	clockevents_config_and_register(&kona_clockevent_timer,
 		arch_timer_rate, 6, 0xffffffff);
 }
+
+static struct clocksource kona_clocksource_timer = {
+	.name = "Kona Clock Source",
+	.rating = 200,
+	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
+	.mask = CLOCKSOURCE_MASK(64),
+	.read = kona_timer_clocksource_read,
+};
 
 static irqreturn_t kona_timer_interrupt(int irq, void *dev_id)
 {
@@ -180,6 +205,10 @@ static int __init kona_timer_init(struct device_node *node)
 			"Kona Timer Tick", NULL))
 		pr_err("%s: request_irq() failed\n", "Kona Timer Tick");
 	kona_timer_set_next_event((arch_timer_rate / HZ), NULL);
+
+	/* Set up clocksource and sched clock */
+	clocksource_register_hz(&kona_clocksource_timer, arch_timer_rate);
+	sched_clock_register(kona_timer_sched_clock_read, 64, arch_timer_rate);
 
 	return 0;
 }
