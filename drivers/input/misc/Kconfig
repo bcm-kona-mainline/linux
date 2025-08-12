@@ -137,6 +137,17 @@ config INPUT_BBNSM_PWRKEY
 	  To compile this driver as a module, choose M here; the
 	  module will be called bbnsm_pwrkey.
 
+config INPUT_BCM590XX_PONKEY
+	tristate "BCM590XX power-on key (PONKEY) support"
+	depends on MFD_BCM590XX
+	default MFD_BCM590XX
+	help
+	  Say Y here to support the PONKEY of Broadcom BCM590XX PMICs as an
+	  input device reporting power button status.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called bcm590xx-ponkey.
+
 config INPUT_BMA150
 	tristate "BMA150/SMB380 acceleration sensor support"
 	depends on I2C
