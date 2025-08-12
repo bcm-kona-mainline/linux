@@ -29,10 +29,12 @@
 #define BCM590XX_REG_IRQ1		0x20
 #define BCM590XX_REG_IRQ1_MASK		0x30
 
-static const struct mfd_cell bcm590xx_devs[] = {
-	{
-		.name = "bcm590xx-vregs",
-	},
+static const struct mfd_cell bcm59054_devs[] = {
+	{ .name = "bcm590xx-vregs", },
+};
+
+static const struct mfd_cell bcm59056_devs[] = {
+	{ .name = "bcm590xx-vregs", },
 };
 
 static bool bcm590xx_volatile_pri(struct device *dev, unsigned int reg)
@@ -369,7 +371,8 @@ static int bcm590xx_parse_version(struct bcm590xx *bcm590xx)
 static int bcm590xx_i2c_probe(struct i2c_client *i2c_pri)
 {
 	struct bcm590xx *bcm590xx;
-	int ret;
+	const struct mfd_cell *cells;
+	int ret, num_cells;
 
 	bcm590xx = devm_kzalloc(&i2c_pri->dev, sizeof(*bcm590xx), GFP_KERNEL);
 	if (!bcm590xx)
@@ -412,12 +415,26 @@ static int bcm590xx_i2c_probe(struct i2c_client *i2c_pri)
 	if (ret)
 		goto err;
 
+	switch (bcm590xx->pmu_id) {
+	case BCM590XX_PMUID_BCM59054:
+		cells = bcm59054_devs;
+		num_cells = ARRAY_SIZE(bcm59054_devs);
+		break;
+	case BCM590XX_PMUID_BCM59056:
+		cells = bcm59056_devs;
+		num_cells = ARRAY_SIZE(bcm59056_devs);
+		break;
+	default:
+		ret = -EINVAL;
+		goto err;
+	};
+
 	ret = bcm590xx_irq_init(bcm590xx);
 	if (ret)
 		goto err;
 
-	ret = devm_mfd_add_devices(&i2c_pri->dev, -1, bcm590xx_devs,
-				   ARRAY_SIZE(bcm590xx_devs), NULL, 0, NULL);
+	ret = devm_mfd_add_devices(&i2c_pri->dev, -1, cells, num_cells,
+				   NULL, 0, NULL);
 	if (ret < 0) {
 		dev_err(&i2c_pri->dev, "failed to add sub-devices: %d\n", ret);
 		goto err;
