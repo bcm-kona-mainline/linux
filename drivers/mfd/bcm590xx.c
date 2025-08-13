@@ -36,6 +36,7 @@ static const struct mfd_cell bcm59054_devs[] = {
 		.name = "bcm590xx-ponkey",
 		.of_compatible = "brcm,bcm59054-ponkey",
 	},
+	{ .name = "bcm590xx-rtc", },
 };
 
 static const struct mfd_cell bcm59056_devs[] = {
@@ -45,6 +46,7 @@ static const struct mfd_cell bcm59056_devs[] = {
 		.name = "bcm590xx-ponkey",
 		.of_compatible = "brcm,bcm59056-ponkey",
 	},
+	{ .name = "bcm590xx-rtc", },
 };
 
 static bool bcm590xx_volatile_pri(struct device *dev, unsigned int reg)
@@ -55,6 +57,12 @@ static bool bcm590xx_volatile_pri(struct device *dev, unsigned int reg)
 	 */
 	return (reg >= BCM590XX_REG_IRQ1 &&
 		reg <= (BCM590XX_REG_IRQ1 + 15));
+}
+
+static bool bcm590xx_volatile_sec(struct device *dev, unsigned int reg)
+{
+	/* 0xe0-0xe6 are RTC registers updated by the hardware */
+	return (reg >= 0xe0 && reg <= 0xe6);
 }
 
 static const struct regmap_config bcm590xx_regmap_config_pri = {
@@ -69,6 +77,7 @@ static const struct regmap_config bcm590xx_regmap_config_sec = {
 	.reg_bits	= 8,
 	.val_bits	= 8,
 	.max_register	= BCM590XX_MAX_REGISTER_SEC,
+	.volatile_reg	= bcm590xx_volatile_sec,
 	.cache_type	= REGCACHE_MAPLE,
 };
 
