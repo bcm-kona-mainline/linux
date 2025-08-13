@@ -31,10 +31,12 @@
 
 static const struct mfd_cell bcm59054_devs[] = {
 	{ .name = "bcm590xx-vregs", },
+	{ .name = "bcm590xx-poweroff", },
 };
 
 static const struct mfd_cell bcm59056_devs[] = {
 	{ .name = "bcm590xx-vregs", },
+	{ .name = "bcm590xx-poweroff", },
 };
 
 static bool bcm590xx_volatile_pri(struct device *dev, unsigned int reg)
