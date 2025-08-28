@@ -30,6 +30,16 @@
 		#size-cells = <1>;
 		ranges;
 
+		secure_mem: secure-mem@9d800000 {
+			reg = <0x9d800000 0x100000>;
+			no-map;
+		};
+
+		mobicore: mobicore@9d900000 {
+			reg = <0x9d900000 0x300000>;
+			no-map;
+		};
+
 		simplefb: framebuffer@9e980000 {
 			reg = <0xae980000 (480 * 800 * 4)>;
 			no-map;
