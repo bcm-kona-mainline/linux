@@ -155,13 +155,17 @@
 		#size-cells = <1>;
 
 		usbotg: usb@e20000 {
-			compatible = "snps,dwc2";
+			compatible = "brcm,kona-hsotg";
 			reg = <0x00e20000 0x10000>;
 			interrupts = <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&master_ccu BCM21664_MASTER_CCU_USB_OTG_AHB>;
 			clock-names = "otg";
 			phys = <&usbphy>;
 			phy-names = "usb2-phy";
+			g-rx-fifo-size = <1064>;
+			g-np-tx-fifo-size = <32>;
+			g-tx-fifo-size = <190 190 190 190 190 190 190 190
+					  190 190 190 190 190 190 190 190>;
 			status = "disabled";
 		};
 
