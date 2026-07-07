@@ -16,6 +16,13 @@ properties:
   reg:
     maxItems: 1
 
+  clocks:
+    maxItems: 1
+    description: USB HSOTG bus clock
+
+  clock-names:
+    const: otg
+
   '#phy-cells':
     const: 0
 
