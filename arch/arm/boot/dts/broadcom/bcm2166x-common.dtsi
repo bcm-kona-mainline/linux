@@ -173,6 +173,8 @@
 			compatible = "brcm,kona-usb2-phy";
 			reg = <0x00e30000 0x28>;
 			#phy-cells = <0>;
+			clocks = <&master_ccu BCM21664_MASTER_CCU_USB_OTG_AHB>;
+			clock-names = "otg";
 			status = "disabled";
 		};
 
