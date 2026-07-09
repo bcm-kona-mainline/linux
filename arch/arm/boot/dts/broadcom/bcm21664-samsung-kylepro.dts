@@ -49,7 +49,7 @@
 			no-map;
 		};
 
-		simplefb: framebuffer@9e980000 {
+		simplefb: framebuffer@ae980000 {
 			reg = <0xae980000 (480 * 800 * 4)>;
 			no-map;
 		};
@@ -59,22 +59,10 @@
 	gpio-keys {
 		compatible = "gpio-keys";
 
-		key-volume-up {
-			label = "Volume Up";
-			gpios = <&gpio 9 GPIO_ACTIVE_LOW>;
-			linux,code = <KEY_VOLUMEUP>;
-		};
-
 		key-home {
 			label = "Home";
 			gpios = <&gpio 10 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_HOMEPAGE>;
-		};
-
-		key-volume-down {
-			label = "Volume Down";
-			gpios = <&gpio 11 GPIO_ACTIVE_LOW>;
-			linux,code = <KEY_VOLUMEDOWN>;
 		};
 	};
 
@@ -234,6 +222,38 @@
 	};
 };
 
+&bsc4 {
+	clock-frequency = <400000>;
+
+	pinctrl-0 = <&bsc4_pins>;
+	pinctrl-names = "default";
+
+	status = "okay";
+
+	touchscreen@50 {
+		compatible = "imagis,ist3032b";
+		reg = <0x50>;
+
+		interrupt-parent = <&gpio>;
+		interrupts = <73 IRQ_TYPE_EDGE_FALLING>;
+
+		vdd-supply = <&gpldo2_reg>;
+
+		touchscreen-size-x = <480>;
+		touchscreen-size-y = <800>;
+	};
+};
+
+&keypad {
+	keypad,num-rows = <1>;
+	keypad,num-columns = <5>;
+
+	linux,keymap = <MATRIX_KEY(0x00, 0x01, KEY_VOLUMEDOWN)>,
+		       <MATRIX_KEY(0x00, 0x03, KEY_VOLUMEUP)>;
+
+	status = "okay";
+};
+
 &pmu_bsc {
 	clock-frequency = <3400000>;
 	status = "okay";
@@ -367,21 +387,21 @@
 			mmsr_reg: mmsr {
 				regulator-min-microvolt = <860000>;
 				regulator-max-microvolt = <1800000>;
-				regulator-always-on;			
+				regulator-always-on;
 				/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
 			};
 
 			sdsr1_reg: sdsr1 {
 				regulator-min-microvolt = <860000>;
 				regulator-max-microvolt = <1800000>;
-				regulator-always-on;			
+				regulator-always-on;
 				/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
 			};
 
 			sdsr2_reg: sdsr2 {
 				regulator-min-microvolt = <860000>;
 				regulator-max-microvolt = <1800000>;
-				regulator-always-on;			
+				regulator-always-on;
 				/* regulator-initial-mode = <0x4>; */ /* REGULATOR_MODE_IDLE */
 			};
 
