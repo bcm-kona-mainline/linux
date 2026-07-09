@@ -46,6 +46,16 @@
 			interrupt-controller;
 		};
 
+		keypad: keypad@1003800 {
+			compatible = "brcm,bcm-keypad";
+			reg = <0x01003800 0xc8>;
+			interrupts = <GIC_SPI 127 IRQ_TYPE_EDGE_RISING>;
+			col-debounce-filter-period = <5>;
+			status-debounce-filter-period = <5>;
+			row-output-enabled;
+			status = "disabled";
+		};
+
 		pinctrl: pinctrl@1004800 {
 			compatible = "brcm,bcm21664-pinctrl";
 			reg = <0x01004800 0x7f4>;
