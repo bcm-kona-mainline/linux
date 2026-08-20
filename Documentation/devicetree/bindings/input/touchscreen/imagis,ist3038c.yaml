@@ -56,6 +56,7 @@ allOf:
           compatible:
             contains:
               enum:
+                - imagis,ist3032b
                 - imagis,ist3032c
                 - imagis,ist3038
     then:
