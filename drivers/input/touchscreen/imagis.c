@@ -20,6 +20,7 @@
 #define IST30XXB_WHOAMI			0x300b300b
 #define IST3038_WHOAMI			0x30383038
 
+#define IST3032B_WHOAMI			0x3000b
 #define IST3032C_WHOAMI			0x32c
 #define IST3038C_WHOAMI			0x38c
 #define IST3038H_WHOAMI			0x38d
@@ -37,6 +38,7 @@
 #define IST3038C_CHIP_ON_DELAY_MS	60
 #define IST3038C_I2C_RETRY_COUNT	3
 #define IST3038C_MAX_FINGER_NUM		10
+#define IST3038C_MAX_KEY_NUM		10
 #define IST3038C_X_MASK			GENMASK(23, 12)
 #define IST3038C_Y_MASK			GENMASK(11, 0)
 #define IST3038C_AREA_MASK		GENMASK(27, 24)
@@ -44,12 +46,23 @@
 #define IST3038C_FINGER_STATUS_MASK	GENMASK(9, 0)
 #define IST3032C_KEY_STATUS_MASK	GENMASK(20, 16)
 
+#define IST3032B_ID_MASK		GENMASK(29, 26)
+#define IST3032B_X_MASK			GENMASK(25, 16)
+#define IST3032B_AREA_MASK		GENMASK(15, 10)
+#define IST3032B_Y_MASK			GENMASK(9, 0)
+#define IST3032B_PRESSED_MASK		BIT(30)
+#define IST3032B_MULTI_MSG_MASK		BIT(31)
+#define IST3032B_KEY_COUNT_MASK		GENMASK(25, 16)
+#define IST3032B_FINGER_COUNT_MASK	GENMASK(9, 0)
+#define IST3032B_IDLE_STATUS		0x1D4E0000
+
 struct imagis_properties {
 	unsigned int interrupt_msg_cmd;
 	unsigned int touch_coord_cmd;
 	unsigned int whoami_cmd;
 	unsigned int whoami_val;
 	bool protocol_b;
+	bool alt_coord_format;
 	bool touch_keys_supported;
 };
 
@@ -142,6 +155,7 @@ static irqreturn_t imagis_interrupt(int irq, void *dev_id)
 		}
 
 		input_mt_slot(ts->input_dev, i);
+
 		input_mt_report_slot_state(ts->input_dev, MT_TOOL_FINGER,
 					   finger_pressed & BIT(i));
 		touchscreen_report_pos(ts->input_dev, &ts->prop,
@@ -157,6 +171,114 @@ static irqreturn_t imagis_interrupt(int irq, void *dev_id)
 	for (int i = 0; i < ts->num_keycodes; i++)
 		input_report_key(ts->input_dev, ts->keycodes[i],
 				 key_pressed & BIT(i));
+
+	input_mt_sync_frame(ts->input_dev);
+	input_sync(ts->input_dev);
+
+out:
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t imagis_interrupt_ist3032b(int irq, void *dev_id)
+{
+	struct imagis_ts *ts = dev_id;
+	u32 intr_message, finger_status;
+	unsigned int finger_count, key_count, key_id, key_pressed;
+	int i;
+	int error;
+
+	error = imagis_i2c_read_reg(ts, ts->tdata->interrupt_msg_cmd, &intr_message);
+	if (error) {
+		dev_err(&ts->client->dev,
+			"failed to read the interrupt message: %d\n", error);
+		goto out;
+	}
+
+	/*
+	 * The interrupt/status register can return one of three types of messages:
+	 * - A periodic "idle" ping that does not contain any touch data;
+	 * - A "multi-message" that needs to be followed up by further reads
+	 *   of the same register to get the touch data for every finger and key;
+	 * - A non-multi message which just contains the coordinate data for one
+	 *   finger.
+	 */
+
+	if ((intr_message & 0xffff0000) == IST3032B_IDLE_STATUS)
+		goto out;
+
+	if (intr_message & IST3032B_MULTI_MSG_MASK) {
+		finger_count = FIELD_GET(IST3032B_FINGER_COUNT_MASK, intr_message);
+		if (finger_count > IST3038C_MAX_FINGER_NUM) {
+			dev_err(&ts->client->dev,
+				"finger count %d is more than maximum supported\n",
+				finger_count);
+			goto out;
+		}
+
+		key_count = FIELD_GET(IST3032B_KEY_COUNT_MASK, intr_message);
+		if (key_count > IST3038C_MAX_KEY_NUM) {
+			dev_err(&ts->client->dev,
+				"key count %d is more than maximum supported\n",
+				key_count);
+			goto out;
+		}
+
+		for (i = 0; i < finger_count; i++) {
+			error = imagis_i2c_read_reg(ts,
+					ts->tdata->touch_coord_cmd, &finger_status);
+			if (error) {
+				dev_err(&ts->client->dev,
+					"failed to read coordinates for finger %d: %d\n",
+					i, error);
+				goto out;
+			}
+
+			input_mt_slot(ts->input_dev,
+				      FIELD_GET(IST3032B_ID_MASK, finger_status));
+
+			input_mt_report_slot_state(ts->input_dev, MT_TOOL_FINGER,
+						   FIELD_GET(IST3032B_PRESSED_MASK, finger_status));
+			touchscreen_report_pos(ts->input_dev, &ts->prop,
+					       FIELD_GET(IST3032B_X_MASK, finger_status),
+					       FIELD_GET(IST3032B_Y_MASK, finger_status),
+					       true);
+			input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR,
+					 FIELD_GET(IST3032B_AREA_MASK, finger_status));
+		}
+
+		for (int i = 0; i < key_count; i++) {
+			error = imagis_i2c_read_reg(ts,
+							ts->tdata->touch_coord_cmd, &finger_status);
+			if (error) {
+				dev_err(&ts->client->dev,
+					"failed to read coordinates for key %d: %d\n",
+					i, error);
+				goto out;
+			}
+
+			key_id = FIELD_GET(IST3032B_ID_MASK, finger_status) - 1;
+			if (key_id >= ts->num_keycodes) {
+				dev_warn(&ts->client->dev,
+					 "no keycode for key %d", key_id);
+				continue;
+			};
+
+			key_pressed = (FIELD_GET(IST3032B_AREA_MASK, finger_status) == 0x06);
+			input_report_key(ts->input_dev, ts->keycodes[key_id], key_pressed);
+		}
+	} else {
+		input_mt_slot(ts->input_dev,
+			FIELD_GET(IST3032B_ID_MASK, intr_message));
+
+		input_mt_report_slot_state(ts->input_dev, MT_TOOL_FINGER,
+					   FIELD_GET(IST3032B_PRESSED_MASK, intr_message));
+		touchscreen_report_pos(ts->input_dev, &ts->prop,
+				       FIELD_GET(IST3032B_X_MASK, intr_message),
+				       FIELD_GET(IST3032B_Y_MASK, intr_message),
+				       true);
+		input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR,
+				 FIELD_GET(IST3032B_AREA_MASK, intr_message));
+	}
 
 	input_mt_sync_frame(ts->input_dev);
 	input_sync(ts->input_dev);
@@ -345,10 +467,16 @@ static int imagis_probe(struct i2c_client *i2c)
 		return -EINVAL;
 	}
 
-	error = devm_request_threaded_irq(dev, i2c->irq,
-					  NULL, imagis_interrupt,
-					  IRQF_ONESHOT | IRQF_NO_AUTOEN,
-					  "imagis-touchscreen", ts);
+	if (ts->tdata->alt_coord_format)
+		error = devm_request_threaded_irq(dev, i2c->irq,
+						  NULL, imagis_interrupt_ist3032b,
+						  IRQF_ONESHOT | IRQF_NO_AUTOEN,
+						  "imagis-touchscreen", ts);
+	else
+		error = devm_request_threaded_irq(dev, i2c->irq,
+						  NULL, imagis_interrupt,
+						  IRQF_ONESHOT | IRQF_NO_AUTOEN,
+						  "imagis-touchscreen", ts);
 	if (error) {
 		dev_err(dev, "IRQ %d allocation failure: %d\n",
 			i2c->irq, error);
@@ -399,6 +527,15 @@ static int imagis_resume(struct device *dev)
 static DEFINE_SIMPLE_DEV_PM_OPS(imagis_pm_ops, imagis_suspend, imagis_resume);
 
 #ifdef CONFIG_OF
+static const struct imagis_properties imagis_3032b_data = {
+	.interrupt_msg_cmd = IST30XX_REG_STATUS,
+	.touch_coord_cmd = IST30XX_REG_STATUS,
+	.whoami_cmd = IST30XX_REG_CHIPID,
+	.whoami_val = IST3032B_WHOAMI,
+	.touch_keys_supported = true,
+	.alt_coord_format = true,
+};
+
 static const struct imagis_properties imagis_3032c_data = {
 	.interrupt_msg_cmd = IST3038C_REG_INTR_MESSAGE,
 	.touch_coord_cmd = IST3038C_REG_TOUCH_COORD,
@@ -439,6 +576,7 @@ static const struct imagis_properties imagis_3038h_data = {
 };
 
 static const struct of_device_id imagis_of_match[] = {
+	{ .compatible = "imagis,ist3032b", .data = &imagis_3032b_data },
 	{ .compatible = "imagis,ist3032c", .data = &imagis_3032c_data },
 	{ .compatible = "imagis,ist3038", .data = &imagis_3038_data },
 	{ .compatible = "imagis,ist3038b", .data = &imagis_3038b_data },
