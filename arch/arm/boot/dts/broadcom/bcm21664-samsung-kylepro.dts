@@ -31,13 +31,18 @@
 
 	memory@80000000 {
 		device_type = "memory";
-		reg = <0x80000000 0x2e000000>; /* 736 MB */
+		reg = <0x80000000 0x30000000>; /* 768 MB */
 	};
 
 	reserved-memory {
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges;
+
+		dsp_mem: dsp-mem@80000000 {
+			reg = <0x80000000 0x1e00000>;
+			no-map;
+		};
 
 		secure_mem: secure-mem@9d800000 {
 			reg = <0x9d800000 0x100000>;
