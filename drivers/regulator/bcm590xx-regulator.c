@@ -6,13 +6,13 @@
  * Author: Matt Porter <mporter@linaro.org>
  */
 
-#include "linux/regmap.h"
 #include <linux/err.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/mfd/bcm590xx.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/regmap.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
@@ -75,8 +75,8 @@ struct bcm590xx_reg {
  *
  * Note that since the mode dictates both LPM/non-LPM mode and the on/off state,
  * we cache the ON/LPM mode selection for each regulator in the bcm590xx_reg
- * modes array, then use that for the enable/disable operation as well as
- * retrieving the mode.
+ * modes array, then use that for the enable operation as well as retrieving
+ * the mode.
  */
 
 static struct regmap
@@ -85,6 +85,25 @@ static struct regmap
 		return pmu->mfd->regmap_sec;
 	else
 		return pmu->mfd->regmap_pri;
+}
+
+static int
+bcm590xx_reg_get_pmmode(struct bcm590xx_reg *pmu, const struct bcm590xx_reg_data *reg_data)
+{
+	struct regmap *regmap = bcm590xx_reg_get_regmap(pmu, reg_data);
+	unsigned int mode_mask, val;
+	int ret;
+
+	if (reg_data->type == BCM590XX_REG_TYPE_SR)
+		mode_mask = 0x7;
+	else
+		mode_mask = 0x3;
+
+	ret = regmap_read(regmap, reg_data->desc.enable_reg, &val);
+	if (ret)
+		return ret;
+
+	return (val & mode_mask);
 }
 
 static int
@@ -107,25 +126,6 @@ bcm590xx_reg_set_pmmode(struct bcm590xx_reg *pmu, const struct bcm590xx_reg_data
 	}
 
 	return regmap_bulk_write(regmap, reg_data->desc.enable_reg, &val, reg_count);
-}
-
-static int
-bcm590xx_reg_get_pmmode(struct bcm590xx_reg *pmu, const struct bcm590xx_reg_data *reg_data)
-{
-	struct regmap *regmap = bcm590xx_reg_get_regmap(pmu, reg_data);
-	unsigned int mode_mask, val;
-	int ret;
-
-	if (reg_data->type == BCM590XX_REG_TYPE_SR)
-		mode_mask = 0x7;
-	else
-		mode_mask = 0x3;
-
-	ret = regmap_read(regmap, reg_data->desc.enable_reg, &val);
-	if (ret)
-		return ret;
-
-	return (val & mode_mask);
 }
 
 static int bcm590xx_reg_is_enabled(struct regulator_dev *rdev)
@@ -156,6 +156,16 @@ static int bcm590xx_reg_disable(struct regulator_dev *rdev)
 	const struct bcm590xx_reg_data *reg_data = &pmu->regs[rdev->desc->id];
 
 	return bcm590xx_reg_set_pmmode(pmu, reg_data, BCM590XX_REG_PMMODE_OFF);
+}
+
+static unsigned int bcm590xx_reg_get_mode(struct regulator_dev *rdev)
+{
+	struct bcm590xx_reg *pmu = rdev_get_drvdata(rdev);
+
+	if (pmu->modes[rdev->desc->id] == BCM590XX_REG_PMMODE_LPM)
+		return REGULATOR_MODE_IDLE;
+
+	return REGULATOR_MODE_NORMAL;
 }
 
 static int bcm590xx_reg_set_mode(struct regulator_dev *rdev, unsigned int mode)
@@ -190,22 +200,12 @@ static int bcm590xx_reg_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	return 0;
 }
 
-static unsigned int bcm590xx_reg_get_mode(struct regulator_dev *rdev)
-{
-	struct bcm590xx_reg *pmu = rdev_get_drvdata(rdev);
-
-	if (pmu->modes[rdev->desc->id] == BCM590XX_REG_PMMODE_LPM)
-		return REGULATOR_MODE_IDLE;
-
-	return REGULATOR_MODE_NORMAL;
-}
-
 static const struct regulator_ops bcm590xx_ops_ldo = {
 	.is_enabled		= bcm590xx_reg_is_enabled,
 	.enable			= bcm590xx_reg_enable,
 	.disable		= bcm590xx_reg_disable,
-	.set_mode		= bcm590xx_reg_set_mode,
 	.get_mode		= bcm590xx_reg_get_mode,
+	.set_mode		= bcm590xx_reg_set_mode,
 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
 	.list_voltage		= regulator_list_voltage_table,
