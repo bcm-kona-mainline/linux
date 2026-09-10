@@ -420,6 +420,7 @@
 			iosr2_reg: iosr2 {
 				regulator-min-microvolt = <860000>;
 				regulator-max-microvolt = <1800000>;
+				regulator-always-on;
 			};
 
 			vbus_reg: vbus {
