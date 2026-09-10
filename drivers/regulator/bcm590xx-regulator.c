@@ -51,11 +51,6 @@ struct bcm590xx_reg {
 	enum bcm590xx_reg_pmmode modes[BCM590XX_MAX_NUM_REGS];
 };
 
-#define PMMODE_3BIT(mode)	(((mode & 0x7) << 3) | (mode & 0x7))
-#define PMMODE_2BIT(mode)						\
-	(((mode & 0x3) << 6) | ((mode & 0x3) << 4)			\
-		| ((mode & 0x3) << 2) | (mode & 0x3))
-
 /*
  * The operating modes for each regulator are stored in PMMODE registers.
  * The known modes are ON, LPM (low-power mode) and OFF.
@@ -78,6 +73,11 @@ struct bcm590xx_reg {
  * modes array, then use that for the enable operation as well as retrieving
  * the mode.
  */
+
+#define PMMODE_3BIT(mode)	(((mode & 0x7) << 3) | (mode & 0x7))
+#define PMMODE_2BIT(mode)						\
+	(((mode & 0x3) << 6) | ((mode & 0x3) << 4)			\
+		| ((mode & 0x3) << 2) | (mode & 0x3))
 
 static struct regmap
 *bcm590xx_reg_get_regmap(struct bcm590xx_reg *pmu, const struct bcm590xx_reg_data *reg_data) {
